@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+
+# Entornos locales
+.env
+.env.*
+
+# Presentaciones
+slides/*/*.pdf
+
+__pycache__ 

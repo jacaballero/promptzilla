@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promptzilla — Serious Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── HUD (top bar) ────────────────────────────────────────────────────── -->
+  <header id="hud">
+    <div class="hud-group">
+      <span class="hud-label">⚡ Tokens</span>
+      <div class="bar-wrap"><div class="bar-fill" id="token-bar"></div></div>
+      <span id="token-count">100 / 100</span>
+    </div>
+
+    <span id="hud-title">PROMPTZILLA</span>
+
+    <div class="hud-group">
+      <span class="hud-label">🌍 Impacto</span>
+      <div class="bar-wrap"><div class="bar-fill" id="impact-bar"></div></div>
+      <span id="impact-label">Bajo</span>
+    </div>
+  </header>
+
+  <!-- ── Scene ────────────────────────────────────────────────────────────── -->
+  <div id="scene">
+
+    <!-- ── Classroom ceiling ────────────────────────────────────────────── -->
+    <div id="classroom-ceiling">
+      <div class="ceiling-light"></div>
+      <div class="ceiling-light"></div>
+      <div class="ceiling-light"></div>
+    </div>
+
+    <!-- ── Back wall ─────────────────────────────────────────────────────── -->
+    <div id="classroom-wall">
+      <div class="classroom-window win-left">
+        <div class="win-frame-h"></div><div class="win-frame-v"></div>
+        <div class="city-glow"></div>
+        <span class="win-star" style="top:12%;left:22%"></span>
+        <span class="win-star" style="top:28%;left:60%"></span>
+        <span class="win-star" style="top:8%; left:75%"></span>
+        <span class="win-star" style="top:20%;left:40%"></span>
+      </div>
+
+      <div id="holo-board">
+        <div class="board-topbar">✦ HTML — Clase Práctica 1</div>
+        <div class="board-body">
+          <span class="cl cl-tag">&lt;!DOCTYPE html&gt;</span>
+          <span class="cl cl-tag">&lt;html lang=<span class="cl-str">"es"</span>&gt;</span>
+          <span class="cl cl-ind cl-attr">&lt;head&gt; … &lt;/head&gt;</span>
+          <span class="cl cl-ind cl-val">&lt;body&gt; … &lt;/body&gt;</span>
+          <span class="cl cl-tag">&lt;/html&gt;</span>
+        </div>
+      </div>
+
+      <div class="classroom-window win-right">
+        <div class="win-frame-h"></div><div class="win-frame-v"></div>
+        <div class="city-glow"></div>
+        <span class="win-star" style="top:16%;left:28%"></span>
+        <span class="win-star" style="top:7%; left:62%"></span>
+        <span class="win-star" style="top:32%;left:14%"></span>
+        <span class="win-star" style="top:22%;left:84%"></span>
+      </div>
+    </div>
+
+    <!-- Stars (scene ambiance) -->
+    <div class="star" style="top:22%; left:10%; animation-delay:0s;"></div>
+    <div class="star" style="top:17%; left:32%; animation-delay:0.8s;"></div>
+    <div class="star" style="top:24%; left:72%; animation-delay:1.5s;"></div>
+    <div class="star" style="top:19%; left:90%; animation-delay:0.4s;"></div>
+    <div class="star" style="top:28%; left:54%; animation-delay:2.1s;"></div>
+
+    <!-- ── Teacher (bald, back-center) ───────────────────────────────────── -->
+    <div id="teacher-wrap">
+      <img id="teacher-svg" class="sprite" src="assets/characters/teacher_idle_1.png" alt="">
+    </div>
+
+    <!-- ── Classmate boy (left-center) ───────────────────────────────────── -->
+    <div id="classmate-boy-wrap" style="display:none">
+      <svg id="classmate-boy-svg" viewBox="0 0 100 175" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="cb-face-grad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FDD5C4"/><stop offset="100%" stop-color="#F5A98A"/>
+          </radialGradient>
+        </defs>
+        <!-- Spiky black hair -->
+        <ellipse cx="50" cy="40" rx="28" ry="24" fill="#15151E"/>
+        <polygon points="28,25 22,6  38,22"  fill="#15151E"/>
+        <polygon points="41,18 42,2  54,16"  fill="#15151E"/>
+        <polygon points="56,18 62,2  69,18"  fill="#15151E"/>
+        <polygon points="66,23 76,7  72,24"  fill="#15151E"/>
+        <!-- Face -->
+        <ellipse cx="50" cy="54" rx="26" ry="25" fill="url(#cb-face-grad)"/>
+        <!-- Eyebrows -->
+        <path d="M 33,46 Q 39,43 46,46" stroke="#15151E" stroke-width="2.2" fill="none"/>
+        <path d="M 54,46 Q 61,43 67,46" stroke="#15151E" stroke-width="2.2" fill="none"/>
+        <!-- Eyes -->
+        <ellipse cx="41" cy="53" rx="7"   ry="7.5" fill="#1A253A"/>
+        <ellipse cx="59" cy="53" rx="7"   ry="7.5" fill="#1A253A"/>
+        <circle  cx="44" cy="50" r="2.5" fill="white" opacity="0.9"/>
+        <circle  cx="62" cy="50" r="2.5" fill="white" opacity="0.9"/>
+        <!-- Nose -->
+        <path d="M 46,63 Q 50,68 54,63" stroke="#C07864" stroke-width="1.5" fill="none"/>
+        <!-- Smirk -->
+        <path d="M 43,72 Q 52,80 61,72" stroke="#C07864" stroke-width="2" fill="none"/>
+        <!-- Ears -->
+        <ellipse cx="24" cy="56" rx="5.5" ry="7"  fill="url(#cb-face-grad)"/>
+        <ellipse cx="76" cy="56" rx="5.5" ry="7"  fill="url(#cb-face-grad)"/>
+        <!-- Neck -->
+        <rect x="43" y="77" width="14" height="13" rx="3" fill="url(#cb-face-grad)"/>
+        <!-- Teal hoodie -->
+        <path d="M 10,92 L 27,80 L 50,90 L 73,80 L 90,92 L 90,155 L 10,155 Z" fill="#197070"/>
+        <path d="M 44,80 L 50,94 L 56,80 Z" fill="#EAF0F0"/>
+        <rect x="34" y="118" width="32" height="18" rx="4" fill="#115858" opacity="0.55"/>
+        <!-- Left arm -->
+        <path d="M 10,92 Q 2,115 8,138" stroke="#197070" stroke-width="20" stroke-linecap="round" fill="none"/>
+        <ellipse cx="8.5"  cy="139" rx="11"  ry="6.5" fill="#115858"/>
+        <ellipse cx="8"    cy="147" rx="9.5" ry="9"   fill="url(#cb-face-grad)"/>
+        <!-- Right arm -->
+        <path d="M 90,92 Q 98,115 92,138" stroke="#197070" stroke-width="20" stroke-linecap="round" fill="none"/>
+        <ellipse cx="91.5" cy="139" rx="11"  ry="6.5" fill="#115858"/>
+        <ellipse cx="92"   cy="147" rx="9.5" ry="9"   fill="url(#cb-face-grad)"/>
+        <!-- Jeans -->
+        <rect x="16" y="152" width="28" height="20" rx="4" fill="#18305A"/>
+        <rect x="56" y="152" width="28" height="20" rx="4" fill="#18305A"/>
+        <!-- White sneakers -->
+        <ellipse cx="30" cy="174" rx="17" ry="7"  fill="#E2E8EC"/>
+        <ellipse cx="70" cy="174" rx="17" ry="7"  fill="#E2E8EC"/>
+        <path d="M 16,174 Q 30,169 44,174" stroke="#B8C8D0" stroke-width="1" fill="none"/>
+        <path d="M 56,174 Q 70,169 84,174" stroke="#B8C8D0" stroke-width="1" fill="none"/>
+      </svg>
+      <span class="char-label">Comp. 1</span>
+    </div>
+
+    <!-- ── Player avatar (left) ──────────────────────────────────────────── -->
+    <div id="avatar-wrap">
+      <img id="avatar-svg" class="sprite" src="assets/characters/player_idle_1.png" alt="">
+    </div>
+
+    <!-- ── Classmate girl (right-center) ────────────────────────────────── -->
+    <div id="classmate-girl-wrap" style="display:none">
+      <svg id="classmate-girl-svg" viewBox="0 0 100 175" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="cg-face-grad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FDD5C4"/><stop offset="100%" stop-color="#F5A98A"/>
+          </radialGradient>
+        </defs>
+        <!-- Long auburn hair (back layer) -->
+        <ellipse cx="50" cy="40" rx="30" ry="29" fill="#8B4010"/>
+        <path d="M 22,40 Q 15,26 19,12 Q 29,2 50,5 Q 71,2 81,12 Q 85,26 78,40" fill="#8B4010"/>
+        <!-- Side locks hanging down -->
+        <path d="M 22,42 Q 13,64 15,92  Q 17,114 20,132" stroke="#8B4010" stroke-width="13" stroke-linecap="round" fill="none"/>
+        <path d="M 78,42 Q 87,64 85,92  Q 83,114 80,132" stroke="#8B4010" stroke-width="13" stroke-linecap="round" fill="none"/>
+        <!-- Side ponytail (right) -->
+        <path d="M 80,48 Q 94,58 92,74 Q 90,87 83,93"  stroke="#8B4010" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <!-- Ponytail tie -->
+        <circle cx="87" cy="55" r="4" fill="#FF6BA0"/>
+        <!-- Face -->
+        <ellipse cx="50" cy="54" rx="26" ry="26" fill="url(#cg-face-grad)"/>
+        <!-- Eyebrows (thin, arched) -->
+        <path d="M 33,46 Q 40,43 47,46" stroke="#7B3E00" stroke-width="1.8" fill="none"/>
+        <path d="M 53,46 Q 60,43 67,46" stroke="#7B3E00" stroke-width="1.8" fill="none"/>
+        <!-- Eyes (larger, expressive) -->
+        <ellipse cx="40" cy="54" rx="8"  ry="8.5" fill="#2C1A08"/>
+        <ellipse cx="60" cy="54" rx="8"  ry="8.5" fill="#2C1A08"/>
+        <ellipse cx="40" cy="55" rx="5"  ry="6"   fill="#6B3A10"/>
+        <ellipse cx="60" cy="55" rx="5"  ry="6"   fill="#6B3A10"/>
+        <circle  cx="43" cy="50" r="3"   fill="white" opacity="0.9"/>
+        <circle  cx="63" cy="50" r="3"   fill="white" opacity="0.9"/>
+        <circle  cx="37" cy="57" r="1.5" fill="white" opacity="0.4"/>
+        <circle  cx="57" cy="57" r="1.5" fill="white" opacity="0.4"/>
+        <!-- Lashes -->
+        <line x1="32" y1="46" x2="30" y2="42" stroke="#2C1A08" stroke-width="1.2"/>
+        <line x1="40" y1="45" x2="40" y2="41" stroke="#2C1A08" stroke-width="1.2"/>
+        <line x1="48" y1="46" x2="50" y2="42" stroke="#2C1A08" stroke-width="1.2"/>
+        <line x1="59" y1="46" x2="57" y2="41" stroke="#2C1A08" stroke-width="1.2"/>
+        <line x1="67" y1="46" x2="69" y2="42" stroke="#2C1A08" stroke-width="1.2"/>
+        <!-- Blush -->
+        <ellipse cx="34" cy="62" rx="6.5" ry="3.5" fill="#FFB0A0" opacity="0.45"/>
+        <ellipse cx="66" cy="62" rx="6.5" ry="3.5" fill="#FFB0A0" opacity="0.45"/>
+        <!-- Nose -->
+        <path d="M 46,64 Q 50,69 54,64" stroke="#C07864" stroke-width="1.5" fill="none"/>
+        <!-- Smile -->
+        <path d="M 43,76 Q 50,84 57,76" stroke="#C07864" stroke-width="2" fill="none"/>
+        <!-- Ears (partial, behind hair) -->
+        <ellipse cx="24" cy="56" rx="5" ry="7" fill="url(#cg-face-grad)"/>
+        <ellipse cx="76" cy="56" rx="5" ry="7" fill="url(#cg-face-grad)"/>
+        <!-- Neck -->
+        <rect x="43" y="78" width="14" height="13" rx="3" fill="url(#cg-face-grad)"/>
+        <!-- Pink-violet top -->
+        <path d="M 12,94 L 28,82 L 50,92 L 72,82 L 88,94 L 88,155 L 12,155 Z" fill="#B03898"/>
+        <path d="M 43,82 L 50,96 L 57,82 Z" fill="#CC50B0"/>
+        <!-- Star decoration -->
+        <text x="39" y="122" font-size="13" fill="#FFD700" opacity="0.72">✦</text>
+        <!-- Left arm -->
+        <path d="M 12,94 Q 4,117 10,140"  stroke="#B03898" stroke-width="18" stroke-linecap="round" fill="none"/>
+        <ellipse cx="10.5" cy="141" rx="10.5" ry="6" fill="#8A2870"/>
+        <ellipse cx="10"   cy="149" rx="9.5"  ry="9" fill="url(#cg-face-grad)"/>
+        <!-- Right arm -->
+        <path d="M 88,94 Q 96,117 90,140"  stroke="#B03898" stroke-width="18" stroke-linecap="round" fill="none"/>
+        <ellipse cx="89.5" cy="141" rx="10.5" ry="6" fill="#8A2870"/>
+        <ellipse cx="90"   cy="149" rx="9.5"  ry="9" fill="url(#cg-face-grad)"/>
+        <!-- Skirt (purple) -->
+        <rect x="16" y="152" width="68" height="14" rx="4" fill="#7B1F9E"/>
+        <!-- Legs -->
+        <rect x="22" y="163" width="18" height="9" rx="2" fill="url(#cg-face-grad)"/>
+        <rect x="60" y="163" width="18" height="9" rx="2" fill="url(#cg-face-grad)"/>
+        <!-- Red shoes -->
+        <ellipse cx="31" cy="174" rx="16" ry="6.5" fill="#B83028"/>
+        <ellipse cx="69" cy="174" rx="16" ry="6.5" fill="#B83028"/>
+      </svg>
+      <span class="char-label">Comp. 2</span>
+    </div>
+
+    <!-- ── Promptzilla (right) ────────────────────────────────────────────── -->
+    <div id="pz-wrap">
+      <img id="promptzilla-svg" class="sprite pz-sleeping" src="assets/characters/promptzilla_idle_3.png" alt="">
+    </div>
+
+    <!-- Narrative bar -->
+    <div id="scene-narrative-bar">
+      <span id="scene-narrative">Año 2035. El aula del futuro.</span>
+    </div>
+  </div><!-- /scene -->
+
+  <!-- ── Game panel ────────────────────────────────────────────────────────── -->
+  <div id="panel">
+
+    <!-- ── Screen: Intro ──────────────────────────────────────────────────── -->
+    <div id="screen-intro" class="screen active">
+      <h1>PROMPTZILLA</h1>
+      <p class="intro-tagline">
+        Año 2035. El abuso indiscriminado de la IA generó a <strong>Promptzilla</strong>,
+        un monstruo que se alimenta de tokens malgastados.
+      </p>
+      <p class="intro-rule">
+        💡 Cada consulta al LLM cuesta tokens. Cuanto más largo tu prompt, más caro.
+        El modo <strong>Socrático (×1)</strong> te da pistas en vez de respuestas directas. El modo <strong>Directo (×2)</strong> revela la respuesta pero consume el doble.
+        Responde correctamente usando los tokens de forma estratégica. ¡No alimentes a Promptzilla!
+      </p>
+      <button id="btn-start" class="btn-primary">Comenzar →</button>
+    </div>
+
+    <!-- ── Screen: Challenge ──────────────────────────────────────────────── -->
+    <div id="screen-challenge" class="screen">
+      <div class="challenge-header">
+        <span id="challenge-num">Reto 1 / 4</span>
+        <span id="challenge-title-text"></span>
+      </div>
+
+      <div id="challenge-question"></div>
+
+      <div id="challenge-options"></div>
+      <p id="challenge-multi-hint">☑ Selecciona <strong>todas</strong> las respuestas correctas</p>
+
+      <!-- LLM consultation area -->
+      <div id="llm-section">
+        <span id="llm-section-title">🤖 Consultar al LLM</span>
+
+        <div class="mode-row">
+          <span style="font-size:0.72rem; color:var(--text-dim);">Modo:</span>
+          <button class="mode-btn active" data-mode="direct">🎯 Directo (×2)</button>
+          <button class="mode-btn"        data-mode="socratic">🤔 Socrático (×1)</button>
+        </div>
+
+        <div class="llm-input-row">
+          <input type="text" id="llm-prompt"
+                 placeholder="Escribe tu consulta y pulsa Consultar (o Enter)…"
+                 autocomplete="off">
+          <button id="btn-consult" class="btn-primary btn-consult">Consultar</button>
+        </div>
+
+        <span id="cost-preview"></span>
+        <div id="no-tokens-msg">⛔ Sin tokens — debes responder por tu cuenta</div>
+        <div id="llm-response-area"></div>
+      </div>
+
+      <div class="submit-row">
+        <button id="btn-submit" class="btn-primary" disabled>Responder →</button>
+      </div>
+    </div>
+
+    <!-- ── Screen: Feedback ───────────────────────────────────────────────── -->
+    <div id="screen-feedback" class="screen">
+      <div id="fb-icon"   class="fb-icon"></div>
+      <div id="fb-result" class="fb-result"></div>
+      <div id="fb-answer"></div>
+      <div id="fb-tokens"></div>
+      <div id="fb-remaining"></div>
+      <button id="btn-next" class="btn-primary">Siguiente reto →</button>
+    </div>
+
+    <!-- ── Screen: Score ──────────────────────────────────────────────────── -->
+    <div id="screen-score" class="screen">
+      <h2>Partida terminada</h2>
+      <div id="score-grade" class="score-grade"></div>
+      <div class="score-stats">
+        <span id="score-correct"></span>
+        <span id="score-spent"></span>
+        <span id="score-remaining"></span>
+      </div>
+      <div id="score-efficiency"></div>
+      <div id="score-message"></div>
+      <button id="btn-restart" class="btn-primary">Volver a empezar</button>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /app -->
+
+<script src="challenges.data.js"></script>
+<script src="llm-sim.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
