@@ -272,6 +272,52 @@ body {
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.55));
 }
 
+#student-girl-wrap {
+  position: absolute;
+  bottom: 25px; left: 50%;
+  transform: translateX(-50%) translateX(-210px);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  z-index: 4;
+}
+#student-girl-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 64px; height: 9px;
+  background: rgba(0,0,60,0.5);
+  border-radius: 50%;
+  filter: blur(6px);
+  z-index: 9;
+}
+#student-girl-svg {
+  height: 200px; width: auto;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+}
+
+#student-boy-wrap {
+  position: absolute;
+  bottom: 25px; left: 50%;
+  transform: translateX(-50%) translateX(200px);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  z-index: 4;
+}
+#student-boy-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 64px; height: 9px;
+  background: rgba(0,0,60,0.5);
+  border-radius: 50%;
+  filter: blur(6px);
+  z-index: 9;
+}
+#student-boy-svg {
+  height: 200px; width: auto;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+}
+
 #classmate-boy-wrap {
   position: absolute;
   bottom: 38px; left: 18%;

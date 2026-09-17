@@ -404,6 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Sprites: preload frames + start idle cycling
   preloadSprites();
   startIdle('avatar-svg',      950,   0);
+  startIdle('student-girl-svg',1000, 500);
+  startIdle('student-boy-svg', 900, 850);
   startIdle('teacher-svg',    1100, 350);
   startIdle('promptzilla-svg', 800,  700);
 });
@@ -425,6 +427,16 @@ const SPRITE_FRAMES = {
     'assets/characters/player_idle_1.png',
     'assets/characters/player_idle_2.png',
     'assets/characters/player_idle_3.png'
+  ],
+  'student-girl-svg': [
+    'assets/characters/student_girl_ponytail_idle_1.png',
+    'assets/characters/student_girl_ponytail_idle_2.png',
+    'assets/characters/student_girl_ponytail_idle_3.png'
+  ],
+  'student-boy-svg': [
+    'assets/characters/student_boy_headsets_idle_1.png',
+    'assets/characters/student_boy_headsets_idle_2.png',
+    'assets/characters/student_boy_headsets_idle_3.png'
   ],
   'teacher-svg':     [
     'assets/characters/teacher_idle_1.png',
