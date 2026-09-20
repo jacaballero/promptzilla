@@ -18,6 +18,9 @@ temp/
 
 # Entornos locales
 .env
+
+# Configuración local (override; la plantilla es config.default.js)
+config.js
 .env.*
 
 # Presentaciones
