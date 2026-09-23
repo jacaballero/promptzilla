@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Promptzilla — favicon: purple monster head -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0D0A2E"/>
+  <!-- horns -->
+  <path d="M19 20 L27 20 L23 6 Z" fill="#F1E4C3" stroke="#23083F" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M37 20 L45 20 L41 6 Z" fill="#F1E4C3" stroke="#23083F" stroke-width="2" stroke-linejoin="round"/>
+  <!-- head -->
+  <rect x="11" y="15" width="42" height="40" rx="17" fill="#7B2FBE" stroke="#23083F" stroke-width="2.5"/>
+  <!-- angry brows -->
+  <path d="M17 26 L29 30" stroke="#23083F" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M47 26 L35 30" stroke="#23083F" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- eyes -->
+  <ellipse cx="24" cy="33" rx="6" ry="7" fill="#8FE04B" stroke="#23083F" stroke-width="1.6"/>
+  <ellipse cx="40" cy="33" rx="6" ry="7" fill="#8FE04B" stroke="#23083F" stroke-width="1.6"/>
+  <circle cx="25" cy="34" r="2.7" fill="#10121A"/>
+  <circle cx="39" cy="34" r="2.7" fill="#10121A"/>
+  <circle cx="23.4" cy="31.6" r="1.1" fill="#FFFFFF"/>
+  <circle cx="37.4" cy="31.6" r="1.1" fill="#FFFFFF"/>
+  <!-- grinning mouth -->
+  <path d="M20 43 Q32 54 44 43 Q38 46 32 46 Q26 46 20 43 Z" fill="#3A1550" stroke="#23083F" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- fangs -->
+  <path d="M24 43 L27 43 L25.5 48 Z" fill="#FFFFFF"/>
+  <path d="M40 43 L37 43 L38.5 48 Z" fill="#FFFFFF"/>
+</svg>

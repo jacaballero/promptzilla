@@ -218,14 +218,30 @@ function depthScale(y) {
 }
 
 // ─── Movement ───────────────────────────────────────────────────────────────
+// Reads the sprite's actual on-screen feet position (as scene percentages),
+// even mid-transition, so an interrupted walk resumes from where it visually is.
+function currentPlayerPos() {
+  const w = stageEl.clientWidth || 1;
+  const h = stageEl.clientHeight || 1;
+  const cs = getComputedStyle(playerEl);
+  const px = parseFloat(cs.left);
+  const py = parseFloat(cs.top);
+  if (Number.isNaN(px) || Number.isNaN(py)) return { x: GAME.player.x, y: GAME.player.y };
+  return { x: (px / w) * 100, y: (py / h) * 100 };
+}
+
 function walkTo(x, y, cb) {
   const scene = SCENES[GAME.sceneId] || {};
   const w = scene.walk || DEFAULT_WALK;
   const obstacles = scene.obstacles || [];
-  const start = { x: GAME.player.x, y: GAME.player.y };
+  clearTimeout(playerEl._t);
+  // Sync logical position to the real on-screen spot so a re-click mid-walk
+  // doesn't start from an already-advanced position and slide.
+  const cur = currentPlayerPos();
+  GAME.player.x = cur.x; GAME.player.y = cur.y;
+  const start = { x: cur.x, y: cur.y };
   const target = resolveTarget(start, x, y, obstacles, 3, w);
   const path = findPath(start, target, obstacles, w);
-  clearTimeout(playerEl._t);
   walkAlong(path.slice(1), cb);
 }
 

@@ -44,20 +44,29 @@ window.SCENES = {
       { x: 68, y: 39, w: 6, h: 4 }   // papelera (derecha)
     ],
     entryPoints: {
-      default:       { x: 50, y: 72 },   // on the entrance mat, inside the corridor
-      fromClassroom: { x: 32, y: 54 },
-      fromStudy:     { x: 70, y: 60 },
-      fromRooftop:   { x: 48, y: 38 }
+      default:        { x: 50, y: 72 },   // on the entrance mat, inside the corridor
+      fromClassroom:  { x: 32, y: 54 },
+      fromClassroom2: { x: 42, y: 34 },
+      fromStudy:      { x: 70, y: 60 },
+      fromRooftop:    { x: 48, y: 38 }
     },
     characters: [],
     hotspots: [
       {
         id: "door-classroom",
-        label: "Aula 2035",
+        label: "Aula 0.01",
         kind: "exit",
         target: "classroom",
         x: 11, y: 7, w: 11, h: 45,
         approach: { x: 30, y: 54 }
+      },
+      {
+        id: "door-classroom2",
+        label: "Aula 0.02",
+        kind: "exit",
+        target: "classroom2",
+        x: 33.4, y: 7, w: 5, h: 28,
+        approach: { x: 42, y: 33 }
       },
       {
         id: "door-study",
@@ -99,10 +108,14 @@ window.SCENES = {
   // ─── Classroom (professor) ───────────────────────────────────────────────
   classroom: {
     id: "classroom",
-    name: "Aula 2035",
+    name: "Aula 0.01",
     caption: "El aula del examen final. La pizarra holográfica parpadea con nervios.",
     bg: { image: "assets/scenes/scene_class_room.png", theme: "classroom" },
-    walk: { yMin: 66, yMax: 95, near: 1.0, far: 0.82 },
+    walk: { yMin: 66, yMax: 95, near: 1.0, far: 0.72 },
+    obstacles: [
+      { x: 91, y: 60, w: 13, h: 5 },   // front-right seat, just above the exit
+      { x: 5, y: 60, w: 5, h: 5 }   // plant under the blackboard
+    ],
     entryPoints: {
       default:      { x: 76, y: 88 },
       fromEntrance: { x: 78, y: 88 }
@@ -130,7 +143,38 @@ window.SCENES = {
       }
     ]
   },
-
+  // ─── Classroom 2 (bright / daytime) ──────────────────────────────
+  classroom2: {
+    id: "classroom2",
+    name: "Aula 0.02",
+    caption: "Otra aula, esta con luz de día. Aquí el examen es a primera hora y sin excusas.",
+    bg: { image: "assets/scenes/scene_class_room_2.png", theme: "classroom" },
+    walk: { yMin: 69.5, yMax: 95, near: 1.0, far: 0.79 },
+    entryPoints: {
+      default:      { x: 76, y: 88 },
+      fromEntrance: { x: 78, y: 88 }
+    },
+    characters: [],
+    hotspots: [
+      {
+        id: "door-out",
+        label: "Salir al pasillo",
+        kind: "exit",
+        target: "entrance",
+        targetEntry: "fromClassroom2",
+        x: 88, y: 70, w: 22, h: 34,
+        approach: { x: 94, y: 90 }
+      },
+      {
+        id: "blackboard",
+        label: "Pizarra holográfica",
+        kind: "look",
+        x: 64, y: 7, w: 36, h: 42,
+        approach: { x: 82, y: 84 },
+        look: "La pizarra proyecta: «Aula B — Aquí sí puedes usar la IA… si demuestras que no la necesitas». Debajo, en letra pequeña: 'y trae café para todos'."
+      }
+    ]
+  },
   // ─── Study room (two students) ───────────────────────────────────────────
   studyroom: {
     id: "studyroom",
