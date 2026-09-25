@@ -557,7 +557,14 @@ function showWin() {
 
 // ─── Sprite idle cycling ────────────────────────────────────────────────────
 function preloadSprites() {
-  Object.values(SPRITES).flat().forEach(src => { const i = new Image(); i.src = src; });
+  const urls = Object.values(SPRITES).flat();
+  // Also preload every scene background/foreground so entering a room for the
+  // first time doesn't wait on a network fetch.
+  Object.values(SCENES).forEach(s => {
+    if (s.bg && s.bg.image) urls.push(s.bg.image);
+    if (s.bg && s.bg.foregroundImage) urls.push(s.bg.foregroundImage);
+  });
+  urls.forEach(src => { const i = new Image(); i.src = src; });
 }
 
 function startIdle(imgEl, frames, period, delay) {
