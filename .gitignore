@@ -29,3 +29,4 @@ slides/*/*.pdf
 __pycache__ 
 
 match_frames.py
+ollama_load_test.py

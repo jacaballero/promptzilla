@@ -118,7 +118,21 @@ body {
   line-height: 1.5;
   background: rgba(255,255,255,0.04);
   border-top: 1px solid var(--border);
+  white-space: pre-wrap;
 }
+.llm-typing {
+  margin-left: auto;
+  color: var(--neon-green);
+  font-size: 0.72rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+.llm-cursor {
+  color: var(--neon-green);
+  font-weight: 700;
+  animation: llm-blink 1s steps(2, start) infinite;
+}
+@keyframes llm-blink { to { visibility: hidden; } }
 .llm-text code {
   font-family: "Courier New", monospace;
   font-size: 0.76rem;
@@ -541,25 +555,6 @@ body.adventure {
   cursor: pointer;
 }
 .c-mode-btn.active { background: var(--purple); color: #fff; border-color: var(--purple-lt); }
-.c-sim-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.c-sim-btn {
-  flex: 1;
-  min-width: 160px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 0.82rem;
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.c-sim-btn:hover:not(:disabled) { border-color: var(--purple-lt); background: rgba(123,47,190,0.18); }
-.c-sim-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.c-sim-cost { color: var(--neon-green); font-weight: 700; font-size: 0.76rem; }
 .c-llm-input { display: flex; gap: 8px; }
 #c-prompt {
   flex: 1;
@@ -571,6 +566,7 @@ body.adventure {
   font-size: 0.82rem;
 }
 #c-cost { font-size: 0.72rem; color: var(--text-dim); }
+#c-cost.c-cost-warn { color: var(--neon-red); font-weight: 700; }
 #c-no-tokens { display: none; font-size: 0.76rem; color: var(--neon-red); }
 #c-response { display: none; }
 #c-response.visible { display: block; }

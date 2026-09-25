@@ -12,32 +12,42 @@
 
 /* global window */
 window.APP_CONFIG_DEFAULT = {
-  // "sim"  → simulated LLM (canned answers, no free text). ACTIVE MODE.
-  // "live" → real LLM over the network. NOT IMPLEMENTED YET (structure ready).
-  mode: "sim",
-
   economy: {
     initialTokens: 100,
 
-    // Simulated mode: fixed cost per query (may be moved per-challenge later).
-    directCost: 16,     // 🎯 direct consultation (gives the answer)
-    socraticCost: 8,    // 🤔 socratic consultation (gives hints only)
-
-    // Live mode (future): word-based cost = (baseCost + words*costPerWord)*factor
+    // Word-based cost = (baseCost + words*costPerWord)*factor,
+    // charged ONLY on a successful consultation.
     baseCost: 8,
     costPerWord: 1,
     directFactor: 2,
     socraticFactor: 1
   },
 
-  // Live-mode connection settings — placeholders for the future real LLM.
+  // Live-mode connection settings for the real LLM (Ollama /api/generate).
+  // In production override these in config.js: point `endpoint` to an HTTPS
+  // same-origin URL (reverse proxy) to avoid mixed-content and CORS issues.
   llm: {
     endpoint: "http://localhost:11434/api/generate",
-    apiToken: "",
-    model: "llama3.2:3b",
-    timeoutMs: 8000,
-    maxTokens: 256,
-    maxConcurrent: 4,
-    system: "Eres un tutor de HTML que ayuda a estudiantes sin dar la respuesta directa salvo que se pida."
+    apiToken: "",            // optional; sent as "Authorization: Bearer <token>"
+    model: "qwen3:4b",
+    // Reasoning models (qwen3, deepseek-r1): true = think, false = don't think.
+    // Non-reasoning models (gemma, llama, mistral): use null so `think` is omitted
+    // (avoids a "does not support thinking" error). With think:true raise maxTokens
+    // so there is room to reason AND answer; with think:false/null a low value is fine.
+    think: true,
+    maxTokens: 2048,          // num_predict — caps output tokens
+    temperature: 0.6,
+    timeoutMs: 30000,        // INACTIVITY timeout: aborts if no new chunk in this window
+    maxConcurrent: 4,        // client-side concurrency gate for a whole class
+    warmupOnLoad: true,      // pre-warm the model when the game boots (live mode)
+
+    // System prompt = base + the active mode's instruction.
+    system: "Eres un tutor de desarrollo web (HTML, CSS y JavaScript). Respondes en español, de forma breve (~80 palabras, 3-4 frases).",
+    modeInstructions: {
+      direct: " Responde de forma completa, dando la solución.",
+      socratic: " NO des la solución ni el código final: ofrece solo pistas y preguntas orientadoras."
+    },
+    // Appended to the student's prompt to keep answers short (token economy).
+    brevitySuffix: " Responde en 3-4 frases, máximo 100 palabras, sin ejemplos largos."
   }
 };

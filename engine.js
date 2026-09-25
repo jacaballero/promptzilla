@@ -91,6 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshHUD();
   changeScene("entrance", "default");
   startPlayerAnim();
+
+  if (window.LLM && LLM.warmup) LLM.warmup();   // pre-warm the model on boot
 });
 
 // ─── HUD ──────────────────────────────────────────────────────────────────────

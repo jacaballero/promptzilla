@@ -16,13 +16,11 @@ const Challenge = (function () {
   let overlay = null;
   let ch = null;
   let selected = [];
-  let mode = "direct";              // used by live mode's mode selector
+  let mode = "direct";              // consultation mode selector (direct/socratic)
   let tokensThisChallenge = 0;
   let busy = false;                 // guards against double consultations
   let onWin = null;
   let onLose = null;
-
-  function llmMode() { return (window.CONFIG && window.CONFIG.mode) || "sim"; }
 
   // ─── Helpers ───────────────────────────────────────────────────────────
   function getCorrectSet(c) {
@@ -82,11 +80,9 @@ const Challenge = (function () {
 
   function $(id) { return overlay.querySelector("#" + id); }
 
-  // ─── LLM section (mode-dependent) ──────────────────────────────────────
-  // "sim": two fixed-cost buttons, no free text. "live": free-text prompt.
+  // ─── LLM section ───────────────────────────────────────────────────────
   function llmSectionHTML() {
-    if (llmMode() === "live") {
-      return `
+    return `
         <div id="c-llm">
           <span class="c-llm-title">🤖 Consultar al LLM</span>
           <div class="c-mode-row">
@@ -102,38 +98,21 @@ const Challenge = (function () {
           <div id="c-no-tokens">⛔ Sin tokens — responde por tu cuenta</div>
           <div id="c-response"></div>
         </div>`;
-    }
-    return `
-        <div id="c-llm">
-          <span class="c-llm-title">🤖 Consultar al LLM</span>
-          <div class="c-sim-actions">
-            <button class="c-sim-btn" data-mode="direct">🎯 Consulta directa <span class="c-sim-cost">−${LLM.simCost("direct")}</span></button>
-            <button class="c-sim-btn" data-mode="socratic">🤔 Consulta socrática <span class="c-sim-cost">−${LLM.simCost("socratic")}</span></button>
-          </div>
-          <div id="c-no-tokens">⛔ Sin tokens — responde por tu cuenta</div>
-          <div id="c-response"></div>
-        </div>`;
   }
 
   function wireLLMSection() {
-    if (llmMode() === "live") {
-      overlay.querySelectorAll(".c-mode-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          overlay.querySelectorAll(".c-mode-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          mode = btn.dataset.mode;
-          updateCost();
-        });
+    overlay.querySelectorAll(".c-mode-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        overlay.querySelectorAll(".c-mode-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        mode = btn.dataset.mode;
+        updateCost();
       });
-      $("c-prompt").addEventListener("input", updateCost);
-      $("c-consult").addEventListener("click", () => consult(mode, $("c-prompt").value.trim()));
-      $("c-prompt").addEventListener("keydown", e => {
-        if (e.key === "Enter" && !$("c-consult").disabled) consult(mode, $("c-prompt").value.trim());
-      });
-      return;
-    }
-    overlay.querySelectorAll(".c-sim-btn").forEach(btn => {
-      btn.addEventListener("click", () => consult(btn.dataset.mode, ""));
+    });
+    $("c-prompt").addEventListener("input", updateCost);
+    $("c-consult").addEventListener("click", () => consult(mode, $("c-prompt").value.trim()));
+    $("c-prompt").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !$("c-consult").disabled) consult(mode, $("c-prompt").value.trim());
     });
   }
 
@@ -175,13 +154,8 @@ const Challenge = (function () {
   }
 
   function refreshLLMAvailability() {
-    const canUse = GAME.tokens > 0 && !busy;
-    if (llmMode() === "live") {
-      if ($("c-prompt")) $("c-prompt").disabled = !canUse;
-      if ($("c-consult")) $("c-consult").disabled = !canUse;
-    } else {
-      overlay.querySelectorAll(".c-sim-btn").forEach(b => { b.disabled = !canUse; });
-    }
+    if ($("c-prompt")) $("c-prompt").disabled = busy || GAME.tokens <= 0;
+    updateCost();   // sets #c-consult disabled based on affordability + busy
     $("c-no-tokens").style.display = GAME.tokens > 0 ? "none" : "block";
   }
 
@@ -199,45 +173,142 @@ const Challenge = (function () {
   }
 
   // ─── LLM consultation ──────────────────────────────────────────────────
+  // Estimated cost of a consultation with the current prompt/mode.
+  function estimatedCost(consultMode, prompt) {
+    return LLM.cost(prompt || "", consultMode);
+  }
+
   function updateCost() {
     const el = $("c-cost");
     if (!el) return;
+    const consultBtn = $("c-consult");
     const value = $("c-prompt") ? $("c-prompt").value : "";
-    if (!value.trim()) { el.textContent = ""; return; }
+    if (!value.trim()) {
+      el.textContent = "";
+      el.classList.remove("c-cost-warn");
+      if (consultBtn) consultBtn.disabled = busy || GAME.tokens <= 0;
+      return;
+    }
     const words = LLM.countWords(value);
-    const cost = LLM.liveCost(value, mode);
-    el.textContent = `Coste estimado: ${cost} tokens (${words} ${words === 1 ? "palabra" : "palabras"})`;
+    const cost = LLM.cost(value, mode);
+    const affordable = cost <= GAME.tokens;
+    el.textContent = affordable
+      ? `Coste estimado: ${cost} tokens (${words} ${words === 1 ? "palabra" : "palabras"})`
+      : `⛔ Coste estimado: ${cost} tokens — solo tienes ${GAME.tokens}`;
+    el.classList.toggle("c-cost-warn", !affordable);
+    if (consultBtn) consultBtn.disabled = busy || !affordable || GAME.tokens <= 0;
+  }
+
+  // ─── Profanity filter ──────────────────────────────────────────────────
+  // Lowercase and strip accents, but keep ñ so "coño" ≠ "cono".
+  function normalizeText(s) {
+    return String(s).toLowerCase()
+      .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e").replace(/[íìïî]/g, "i")
+      .replace(/[óòöô]/g, "o").replace(/[úùüû]/g, "u");
+  }
+  function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+  // Per-word regex: tolerates repeated letters and separators, bounded by
+  // non-letters to avoid false positives (e.g. "clase", "disputa").
+  function profanityPattern(word) {
+    const sep = "[\\s._\\-*]*";
+    const body = [...normalizeText(word)].map(ch => escapeRegExp(ch) + "+").join(sep);
+    return new RegExp(`(?<![\\p{L}])${body}(?![\\p{L}])`, "iu");
+  }
+  let profanityPatterns = null;
+  function hasProfanity(text) {
+    const data = window.PROFANITY || {};
+    if (!profanityPatterns) profanityPatterns = (data.words || []).map(profanityPattern);
+    const allow = (data.allow || []).map(normalizeText);
+    const t = normalizeText(text);
+    return profanityPatterns.some(re => {
+      const m = re.exec(t);
+      return m && !allow.includes(m[0]);
+    });
   }
 
   async function consult(consultMode, prompt) {
     if (busy) return;
-    if (llmMode() === "live" && !prompt) { showMsg("⚠️ Escribe una consulta antes de preguntar."); return; }
+    if (!prompt) { showMsg("⚠️ Escribe una consulta antes de preguntar."); return; }
+    if (hasProfanity(prompt)) { showMsg("⚠️ Cuida el lenguaje: reformula tu consulta sin palabras ofensivas."); return; }
     if (GAME.tokens <= 0) { showMsg("⚠️ Sin tokens. No puedes consultar al LLM."); return; }
+
+    const cost = estimatedCost(consultMode, prompt);
+    if (cost > GAME.tokens) {
+      showMsg(`⚠️ Esta consulta cuesta ${cost} tokens y solo tienes ${GAME.tokens}. Acórtala o usa el modo socrático.`);
+      return;
+    }
 
     busy = true;
     refreshLLMAvailability();
-    if (llmMode() === "live") showMsg("🤖 Pensando…");
+    await consultLive(consultMode, prompt);
+    busy = false;
+    refreshLLMAvailability();
+  }
 
-    const { text, cost } = await LLM.query({ challengeId: ch.id, prompt, mode: consultMode });
+  // Deduct the query cost (capped at the remaining balance) and refresh the HUD.
+  function deductTokens(cost) {
     const deducted = Math.min(cost, GAME.tokens);
     GAME.tokens -= deducted;
     GAME.totalSpent += deducted;
     tokensThisChallenge += deducted;
     refreshHUD();
     updateTokenLabel();
+    return deducted;
+  }
 
-    const modeTag = consultMode === "socratic"
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function modeTagHTML(consultMode) {
+    return consultMode === "socratic"
       ? '<span class="tag-socratic">Socrático</span>'
       : '<span class="tag-direct">Directo</span>';
-    $("c-response").innerHTML = `
-      <div class="llm-header"><span class="llm-icon">🤖</span>${modeTag}<span class="llm-cost">−${deducted} tokens</span></div>
-      <div class="llm-text">${text}</div>`;
-    $("c-response").classList.add("visible");
-    if ($("c-prompt")) $("c-prompt").value = "";
-    if ($("c-cost")) $("c-cost").textContent = "";
+  }
 
-    busy = false;
-    refreshLLMAvailability();
+  // What to show live: strip the model's reasoning. While still inside an open
+  // <think> block, show nothing yet (keep the typing indicator).
+  function visibleAnswer(full) {
+    const t = String(full || "");
+    const end = t.lastIndexOf("</think>");
+    if (end !== -1) return t.slice(end + "</think>".length).replace(/<\/?think>/gi, "");
+    if (/<think>/i.test(t)) return "";
+    return t;
+  }
+
+  // Stream tokens in, charge ONLY on success. On failure keep the tokens and
+  // the prompt so the student can retry.
+  async function consultLive(consultMode, prompt) {
+    const resp = $("c-response");
+    resp.classList.add("visible");
+    resp.innerHTML = `
+      <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-typing">escribiendo…</span></div>
+      <div class="llm-text" id="c-live-text"><span class="llm-cursor">▋</span></div>`;
+
+    const onToken = (_frag, full) => {
+      const el = $("c-live-text");
+      if (!el) return;
+      const shown = visibleAnswer(full);
+      el.innerHTML = shown
+        ? escapeHTML(shown) + '<span class="llm-cursor">▋</span>'
+        : '<span class="llm-cursor">▋</span>';
+    };
+
+    try {
+      const { text, cost } = await LLM.query({ prompt, mode: consultMode, onToken });
+      const deducted = deductTokens(cost);
+      resp.innerHTML = `
+        <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-cost">−${deducted} tokens</span></div>
+        <div class="llm-text">${escapeHTML(text)}</div>`;
+      if ($("c-prompt")) $("c-prompt").value = "";
+      if ($("c-cost")) $("c-cost").textContent = "";
+    } catch (err) {
+      console.warn("LLM live query failed:", err);
+      resp.innerHTML = `<div class="llm-msg-warn">📡 La conexión ha fallado, cosas de la IA… vuelve a intentarlo.</div>`;
+      resp.classList.add("visible");
+    }
   }
 
   function showMsg(msg) {
