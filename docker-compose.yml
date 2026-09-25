@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      # External Ollama the proxy forwards /api/* to. Set OLLAMA_UPSTREAM in
+      # a local .env file (see .env.example); never commit the real address.
+      - OLLAMA_UPSTREAM=${OLLAMA_UPSTREAM:?set OLLAMA_UPSTREAM in .env}
+    volumes:
+      # Production config (relative endpoint "/api/generate"). Copy
+      # config.prod.example.js to config.js and edit model/endpoint.
+      - ./config.js:/srv/config.js:ro
+    restart: unless-stopped
+    # If this container runs on the SAME host as Ollama (Linux), use instead:
+    #   extra_hosts: ["host.docker.internal:host-gateway"]
+    # and set OLLAMA_UPSTREAM=host.docker.internal:11434

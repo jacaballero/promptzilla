@@ -1,0 +1,27 @@
+# Local override / mounted at runtime as a volume.
+config.js
+config.prod.example.js
+
+# Docker + VCS metadata. (Caddyfile is NOT ignored: the Dockerfile COPYs it.)
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Docs and licensing (not needed inside the image).
+README.md
+LICENSE
+
+# Tooling and build helpers.
+assets/*.py
+**/__pycache__
+
+# OS / editor cruft.
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.log

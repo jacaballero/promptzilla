@@ -22,6 +22,7 @@ temp/
 # Configuración local (override; la plantilla es config.default.js)
 config.js
 .env.*
+!.env.example
 
 # Presentaciones
 slides/*/*.pdf
