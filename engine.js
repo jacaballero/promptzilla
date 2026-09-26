@@ -48,6 +48,13 @@ const SPRITES = {
     "assets/characters/student_boy_headsets_idle_2.png",
     "assets/characters/student_boy_headsets_idle_3.png"
   ],
+  "students-plaza": [
+    "assets/characters/students_group_1.png",   // 0: todos hablando (A)
+    "assets/characters/students_group_2.png",   // 1: todos con la boca cerrada
+    "assets/characters/students_group_3.png",   // 2: todos hablando (B)
+    "assets/characters/students_group_5.png",   // 3: habla el del centro
+    "assets/characters/students_group_6.png"    // 4: habla el de la derecha
+  ],
   promptzilla: [
     "assets/characters/promptzilla_idle_1.png",
     "assets/characters/promptzilla_idle_2.png",
@@ -174,12 +181,16 @@ function buildCharacter(c) {
   img.alt = "";
   wrap.appendChild(img);
 
-  wrap.addEventListener("click", e => {
-    e.stopPropagation();
-    onCharacterClick(c);
-  });
+  if (c.static) {
+    wrap.style.pointerEvents = "none";   // ambient decor: let hotspots take the click
+  } else {
+    wrap.addEventListener("click", e => {
+      e.stopPropagation();
+      onCharacterClick(c);
+    });
+  }
 
-  startIdle(img, SPRITES[c.sprite], 950 + Math.random() * 300, Math.random() * 500);
+  startIdle(img, SPRITES[c.sprite], c.animMs || (950 + Math.random() * 300), Math.random() * 500, c.animSeq);
   return wrap;
 }
 
@@ -567,13 +578,13 @@ function preloadSprites() {
   urls.forEach(src => { const i = new Image(); i.src = src; });
 }
 
-function startIdle(imgEl, frames, period, delay) {
+function startIdle(imgEl, frames, period, delay, seq) {
+  const order = seq && seq.length ? seq : [0, 1, 2, 1];
   let idx = 0;
-  const seq = [0, 1, 2, 1];
   setTimeout(() => {
     const t = setInterval(() => {
-      idx = (idx + 1) % seq.length;
-      imgEl.src = frames[seq[idx]];
+      idx = (idx + 1) % order.length;
+      imgEl.src = frames[order[idx]];
     }, period);
     idleTimers.push(t);
   }, delay);

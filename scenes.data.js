@@ -271,8 +271,22 @@ window.SCENES = {
       default:      { x: 50, y: 84 },
       fromCorridor: { x: 50, y: 63 }   // sale del edificio, junto a la puerta
     },
-    characters: [],
+    characters: [
+      // Ambient chatting trio (non-interactive; the hotspot carries the joke).
+      // animSeq recorre los 5 frames (0/2 = todos hablando, 1 = bocas cerradas,
+      // 3 = centro, 4 = derecha).
+      { id: "students-plaza", sprite: "students-plaza", x: 29, y: 85, scale: 1.08, static: true, animMs: 450,
+        animSeq: [0, 1, 2, 3, 4] }
+    ],
     hotspots: [
+      {
+        id: "students-talk",
+        label: "Estudiantes",
+        kind: "look",
+        x: 16, y: 42, w: 26, h: 44,
+        approach: { x: 46, y: 84 },
+        look: "Un corrillo de estudiantes cuchichea sobre la IA. Pillas retazos: «...no le sueltes un testamento al modelo, que cada token se paga»; «sé concreto: pídele exacto lo que necesitas y listo»; «yo gasté media cuenta preguntándole cosas con rodeos… aprende de mis errores»."
+      },
       {
         id: "door-in",
         label: "Entrar",
