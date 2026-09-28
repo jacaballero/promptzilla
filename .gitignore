@@ -31,3 +31,6 @@ __pycache__
 
 match_frames.py
 ollama_load_test.py
+
+
+config_*.js

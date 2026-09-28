@@ -5,14 +5,16 @@ services:
       # Host port is configurable via WEB_PORT in .env (defaults to 8080).
       - "${WEB_PORT:-8080}:80"
     environment:
-      # External Ollama the proxy forwards /api/* to. Set OLLAMA_UPSTREAM in
-      # a local .env file (see .env.example); never commit the real address.
-      - OLLAMA_UPSTREAM=${OLLAMA_UPSTREAM:?set OLLAMA_UPSTREAM in .env}
+      # External LLM backend the proxy forwards the API path to (host:port).
+      # Point it at your Ollama (e.g. host:11434) or vLLM (e.g. host:8002),
+      # matching the provider set in config.js. Set LLM_UPSTREAM in .env.
+      - LLM_UPSTREAM=${LLM_UPSTREAM:-127.0.0.1:11434}
     volumes:
       # Production config (relative endpoint "/api/generate"). Copy
       # config.prod.example.js to config.js and edit model/endpoint.
       - ./config.js:/srv/config.js:ro
     restart: unless-stopped
-    # If this container runs on the SAME host as Ollama (Linux), use instead:
+    # If this container runs on the SAME host as the LLM backend (Linux), use
+    # instead:
     #   extra_hosts: ["host.docker.internal:host-gateway"]
-    # and set OLLAMA_UPSTREAM=host.docker.internal:11434
+    # and set LLM_UPSTREAM=host.docker.internal:11434

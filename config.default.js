@@ -23,10 +23,14 @@ window.APP_CONFIG_DEFAULT = {
     socraticFactor: 1
   },
 
-  // Live-mode connection settings for the real LLM (Ollama /api/generate).
+  // Live-mode connection settings for the real LLM.
+  // Two backends are supported via `provider`:
+  //   - "ollama": Ollama /api/generate (NDJSON streaming).
+  //   - "openai": OpenAI-compatible API such as vLLM /v1/chat/completions (SSE).
   // In production override these in config.js: point `endpoint` to an HTTPS
   // same-origin URL (reverse proxy) to avoid mixed-content and CORS issues.
   llm: {
+    provider: "ollama",      // "ollama" | "openai"
     endpoint: "http://localhost:11434/api/generate",
     apiToken: "",            // optional; sent as "Authorization: Bearer <token>"
     model: "qwen3:4b",
@@ -34,6 +38,7 @@ window.APP_CONFIG_DEFAULT = {
     // Non-reasoning models (gemma, llama, mistral): use null so `think` is omitted
     // (avoids a "does not support thinking" error). With think:true raise maxTokens
     // so there is room to reason AND answer; with think:false/null a low value is fine.
+    // Only used by the "ollama" provider.
     think: true,
     maxTokens: 2048,          // num_predict — caps output tokens
     temperature: 0.6,

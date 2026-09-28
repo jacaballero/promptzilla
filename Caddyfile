@@ -1,15 +1,17 @@
 # HTTP on :80. The browser only talks to this container (same origin); the
-# container forwards /api/* to the external Ollama (server -> server), so CORS
-# and mixed-content never come into play. For public HTTPS, replace `:80` with
-# your domain (Caddy then provisions certificates automatically via ACME).
+# container forwards the API path to the external LLM backend (server -> server),
+# so CORS and mixed-content never come into play. For public HTTPS, replace `:80`
+# with your domain (Caddy then provisions certificates automatically via ACME).
 :80 {
 	root * /srv
 	encode gzip
 
-	# Forward /api/* to Ollama, keeping the path (Ollama expects /api/generate).
-	@api path /api/*
-	reverse_proxy @api {$OLLAMA_UPSTREAM} {
-		# Disable response buffering so streaming NDJSON flows chunk by chunk.
+	# Forward the active backend's API path to LLM_UPSTREAM. Only one provider is
+	# used per deployment (chosen in config.js), so both matchers share one upstream.
+	# Ollama uses /api/generate; OpenAI-compatible backends (e.g. vLLM) use /v1/*.
+	@llm path /api/* /v1/*
+	reverse_proxy @llm {$LLM_UPSTREAM:127.0.0.1:11434} {
+		# Disable response buffering so streaming NDJSON/SSE flows chunk by chunk.
 		flush_interval -1
 	}
 

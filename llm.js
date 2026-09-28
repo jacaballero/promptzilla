@@ -1,5 +1,7 @@
 // Promptzilla — LLM adapter
-// Consults a real LLM (Ollama /api/generate) over the network with streaming.
+// Consults a real LLM over the network with streaming. Supports two backends
+// via config `provider`: "ollama" (/api/generate, NDJSON) and "openai"
+// (OpenAI-compatible /v1/chat/completions, SSE — e.g. vLLM).
 // Emits partial tokens through an onToken callback and REJECTS on error/timeout
 // (no fallback) so the UI can keep the tokens and the student's prompt intact.
 //
@@ -76,20 +78,40 @@ const LLM = (function () {
     const headers = { "Content-Type": "application/json" };
     if (c.apiToken) headers["Authorization"] = `Bearer ${c.apiToken}`;
 
-    const body = {
-      model: c.model,
-      system: systemPrompt(consultMode),
-      prompt: `${prompt}${c.brevitySuffix || ""}`,
-      stream: true,
-      options: {
-        num_predict: c.maxTokens ?? 256,
-        temperature: c.temperature ?? 0.6
-      }
-    };
-    // `think` is only accepted by reasoning models (qwen3, deepseek-r1). Send it
-    // when it is a boolean; leave it out (config think:null) for other models to
-    // avoid a "does not support thinking" error.
-    if (typeof c.think === "boolean") body.think = c.think;
+    const isOpenAI = c.provider === "openai";
+    const userPrompt = `${prompt}${c.brevitySuffix || ""}`;
+
+    let body;
+    if (isOpenAI) {
+      // OpenAI-compatible API (e.g. vLLM /v1/chat/completions).
+      body = {
+        model: c.model,
+        messages: [
+          { role: "system", content: systemPrompt(consultMode) },
+          { role: "user", content: userPrompt }
+        ],
+        stream: true,
+        max_tokens: c.maxTokens ?? 256,
+        temperature: c.temperature ?? 0.6,
+        stream_options: { include_usage: true }
+      };
+    } else {
+      // Ollama /api/generate.
+      body = {
+        model: c.model,
+        system: systemPrompt(consultMode),
+        prompt: userPrompt,
+        stream: true,
+        options: {
+          num_predict: c.maxTokens ?? 256,
+          temperature: c.temperature ?? 0.6
+        }
+      };
+      // `think` is only accepted by reasoning models (qwen3, deepseek-r1). Send it
+      // when it is a boolean; leave it out (config think:null) for other models to
+      // avoid a "does not support thinking" error.
+      if (typeof c.think === "boolean") body.think = c.think;
+    }
 
     let resp;
     try {
@@ -127,18 +149,41 @@ const LLM = (function () {
           buffer = buffer.slice(nl + 1);
           if (!line) continue;
 
-          let obj;
-          try { obj = JSON.parse(line); } catch { continue; }
-          if (obj.error) throw new Error(obj.error);
-          if (obj.response) {
-            text += obj.response;
-            if (onToken) onToken(obj.response, text);
-          }
-          if (obj.done) {
-            counts = {
-              prompt_eval_count: obj.prompt_eval_count || 0,
-              eval_count: obj.eval_count || 0
-            };
+          if (isOpenAI) {
+            // Server-Sent Events: "data: {json}" lines, ending with "data: [DONE]".
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") continue;
+            let obj;
+            try { obj = JSON.parse(payload); } catch { continue; }
+            if (obj.error) throw new Error(obj.error.message || obj.error);
+            const delta = obj.choices && obj.choices[0] && obj.choices[0].delta;
+            const chunk = delta && delta.content;
+            if (chunk) {
+              text += chunk;
+              if (onToken) onToken(chunk, text);
+            }
+            // Sent as a final chunk when stream_options.include_usage is set.
+            if (obj.usage) {
+              counts = {
+                prompt_eval_count: obj.usage.prompt_tokens || 0,
+                eval_count: obj.usage.completion_tokens || 0
+              };
+            }
+          } else {
+            let obj;
+            try { obj = JSON.parse(line); } catch { continue; }
+            if (obj.error) throw new Error(obj.error);
+            if (obj.response) {
+              text += obj.response;
+              if (onToken) onToken(obj.response, text);
+            }
+            if (obj.done) {
+              counts = {
+                prompt_eval_count: obj.prompt_eval_count || 0,
+                eval_count: obj.eval_count || 0
+              };
+            }
           }
         }
       }
@@ -173,15 +218,14 @@ const LLM = (function () {
     const headers = { "Content-Type": "application/json" };
     if (c.apiToken) headers["Authorization"] = `Bearer ${c.apiToken}`;
 
+    const warmBody = c.provider === "openai"
+      ? { model: c.model, messages: [{ role: "user", content: "ping" }], max_tokens: 1, stream: false }
+      : { model: c.model, prompt: "", stream: false, options: { num_predict: 1 } };
+
     fetch(c.endpoint, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        model: c.model,
-        prompt: "",
-        stream: false,
-        options: { num_predict: 1 }
-      })
+      body: JSON.stringify(warmBody)
     }).catch(() => { /* best-effort; ignore */ });
   }
 

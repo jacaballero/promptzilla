@@ -66,47 +66,72 @@ window.APP_CONFIG = {
     socraticFactor: 1       // cost multiplier for SOCRATIC consultations
   },
   llm: {
+    provider: "ollama",     // "ollama" | "openai"
     endpoint: "http://localhost:11434/api/generate",
     model: "qwen3:4b"       // any model available on your Ollama server
   }
 };
 ```
 
+Two backends are supported via `provider`:
+
+- `"ollama"` — Ollama `/api/generate` (NDJSON streaming).
+- `"openai"` — any OpenAI-compatible API such as **vLLM** `/v1/chat/completions`
+  (SSE streaming). Example:
+
+```js
+window.APP_CONFIG = {
+  llm: {
+    provider: "openai",
+    endpoint: "/v1/chat/completions",   // relative → proxied by Caddy
+    model: "google/gemma-4-12B-it"
+  }
+};
+```
+
 ## Deploying with Docker
 
-The game is fully static, but browsers can't call an external Ollama directly
+The game is fully static, but browsers can't call an external LLM directly
 (CORS and, under HTTPS, mixed-content). The container solves this by serving the
-game **and** reverse-proxying `/api/*` to Ollama with **Caddy**, so the browser
-only ever talks to the same origin.
+game **and** reverse-proxying the API path to the backend with **Caddy**, so the
+browser only ever talks to the same origin. One backend is active per deployment
+(chosen in `config.js`), so both paths share a single upstream:
+
+- `/api/*` → Ollama.
+- `/v1/*` → OpenAI-compatible backend such as vLLM.
 
 ```
                  ┌──────────── container (Caddy) ─────────────┐
- Browser ──────► │  /             → static files (the game)   │
- (same origin)   │  /api/generate → reverse_proxy → Ollama ───┼──► your Ollama
+ Browser ──────► │  /                    → static files       │
+ (same origin)   │  /api/generate        → proxy ┐            │
+                 │  /v1/chat/completions → proxy ─┴→ LLM_UPSTREAM ──► your backend
                  └────────────────────────────────────────────┘
 ```
 
 Because of this, the production `config.js` uses a **relative** endpoint
-(`/api/generate`): no CORS, no mixed-content, works over HTTP or HTTPS.
+(`/api/generate` or `/v1/chat/completions`): no CORS, no mixed-content, works
+over HTTP or HTTPS.
 
 ### Files
 
 - `Dockerfile` — bakes the static game into a `caddy:2-alpine` image.
-- `Caddyfile` — serves `/srv` and proxies `/api/*` to `{$OLLAMA_UPSTREAM}`.
-- `docker-compose.yml` — one `web` service on port `8080`, reads `OLLAMA_UPSTREAM`
+- `Caddyfile` — serves `/srv` and proxies `/api/*` and `/v1/*` to
+  `{$LLM_UPSTREAM}`.
+- `docker-compose.yml` — one `web` service on port `8080`, reads `LLM_UPSTREAM`
   from `.env`, and mounts `config.js` as a read-only volume.
 - `.env.example` / `config.prod.example.js` — templates to copy.
 
 ### Steps
 
 ```bash
-# 1. Point the proxy to your Ollama (host:port). .env is git-ignored.
+# 1. Point the proxy to your backend (host:port). .env is git-ignored.
 cp .env.example .env
-#    edit .env → OLLAMA_UPSTREAM=your-ollama-host:11434
+#    edit .env → LLM_UPSTREAM=your-ollama-host:11434   (provider "ollama")
+#             or LLM_UPSTREAM=your-vllm-host:8002       (provider "openai")
 
 # 2. Production config with the relative endpoint. config.js is git-ignored.
 cp config.prod.example.js config.js
-#    adjust "model" if needed
+#    pick provider (openai/ollama) and adjust "model" if needed
 
 # 3. Build and run
 docker compose up --build -d
@@ -122,17 +147,25 @@ a rebuild.
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/        # → 200
+
+# Ollama backend (provider "ollama")
 curl -N -X POST http://localhost:8080/api/generate \
   -d '{"model":"qwen3:4b","prompt":"hola","stream":true,"think":false}'  # → streaming NDJSON
+
+# vLLM backend (provider "openai")
+curl -N -X POST http://localhost:8080/v1/chat/completions \
+  -d '{"model":"google/gemma-4-12B-it","messages":[{"role":"user","content":"hola"}],"stream":true}'  # → streaming SSE
 ```
 
-The container must be able to reach the Ollama host set in `OLLAMA_UPSTREAM`
-(e.g. be on the same internal network / VPN); otherwise `/api/*` returns `502`.
+The container must be able to reach the backend host set in `LLM_UPSTREAM`
+(e.g. be on the same internal network / VPN); otherwise the proxied path
+returns `502`.
 
-### Ollama on the same host (Linux)
+### LLM on the same host (Linux)
 
-If Ollama runs on the same machine as the container, uncomment `extra_hosts`
-in `docker-compose.yml` and set `OLLAMA_UPSTREAM=host.docker.internal:11434`.
+If the LLM backend runs on the same machine as the container, uncomment
+`extra_hosts` in `docker-compose.yml` and set
+`LLM_UPSTREAM=host.docker.internal:11434` (or the vLLM port).
 
 ### Public HTTPS (optional)
 
@@ -143,4 +176,4 @@ internal network without a public domain, plain HTTP is enough.
 ### Portability
 
 To deploy elsewhere (another server or university), just change
-`OLLAMA_UPSTREAM` in `.env` and, if needed, `model` in `config.js`. Nothing else.
+`LLM_UPSTREAM` in `.env` and, if needed, `model` in `config.js`. Nothing else.
