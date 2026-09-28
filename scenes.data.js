@@ -121,7 +121,7 @@ window.SCENES = {
       fromEntrance: { x: 78, y: 88 }
     },
     characters: [
-      { id: "teacher", sprite: "teacher", x: 38, y: 84, dialogue: "teacher" }
+      { id: "teacher", sprite: "teacher", x: 38, y: 84, dialogue: "teacher" , hit: { w: 33, h: 99 } }
     ],
     hotspots: [
       {
@@ -154,7 +154,12 @@ window.SCENES = {
       default:      { x: 76, y: 88 },
       fromEntrance: { x: 78, y: 88 }
     },
-    characters: [],
+    characters: [
+      // Idle student you can talk to; he offers a practice challenge.
+      // hit = tuned clickable box (percent of the sprite, anchored at the feet).
+      { id: "student-glasses", sprite: "student-glasses", x: 32, y: 84, scale: 1.13, animMs: 700,
+        animSeq: [0, 1, 2, 1], dialogue: "studentGlasses", hit: { w: 32, h: 96 } }
+    ],
     hotspots: [
       {
         id: "door-out",
@@ -187,8 +192,8 @@ window.SCENES = {
       fromEntrance: { x: 20, y: 88 }
     },
     characters: [
-      { id: "student-girl", sprite: "student-girl", x: 40, y: 88, dialogue: "studentGirl" },
-      { id: "student-boy",  sprite: "student-boy",  x: 60, y: 84, dialogue: "studentBoy" }
+      { id: "student-girl", sprite: "student-girl", x: 40, y: 88, dialogue: "studentGirl" , hit: { w: 32, h: 96 } },
+      { id: "student-boy",  sprite: "student-boy",  x: 60, y: 84, dialogue: "studentBoy", hit: { w: 33, h: 98 } }
     ],
     hotspots: [
       {
@@ -223,7 +228,7 @@ window.SCENES = {
       fromCorridor: { x: 26, y: 86 }
     },
     characters: [
-      { id: "promptzilla", sprite: "promptzilla", x: 66, y: 89, scale: 1.65, dialogue: "promptzilla" }
+      { id: "promptzilla", sprite: "promptzilla", x: 66, y: 89, scale: 1.65, dialogue: "promptzilla" , hit: { w: 66, h: 96 } }
     ],
     hotspots: [
       {

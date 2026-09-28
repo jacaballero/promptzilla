@@ -96,6 +96,42 @@ window.DIALOGUES = {
     }
   },
 
+  // ─── Student with glasses (practice, classroom 0.02) ─────────────────────
+  studentGlasses: {
+    start: "root",
+    nodes: {
+      root: {
+        npc: "(Levanta la vista de la tablet) Buenas. Estoy ordenando mis apuntes por etiquetas semánticas, como debe ser. ¿Te lanzo un reto de práctica?",
+        options: [
+          { text: "Venga, un reto.", action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: "¿Apuntes en tablet? ¿No tiras de IA?", goto: "meta" },
+          { text: "Ahora vuelvo. (Salir)", end: true }
+        ]
+      },
+      meta: {
+        npc: "La IA la uso para entender, no para que piense por mí. Prompt concreto, respuesta útil, y Promptzilla se queda a dieta.",
+        options: [
+          { text: "Ponme el reto.", action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: "Volver", goto: "root" }
+        ]
+      },
+      won: {
+        npc: "Impecable. Eso es tenerlo por dentro, no en el historial del chat. Al examen con la cabeza alta.",
+        setFlag: "practiced",
+        options: [
+          { text: "¡Gracias!", end: true }
+        ]
+      },
+      lost: {
+        npc: "Casi. Míralo con calma, que aquí no corre prisa… salvo el examen. Vuelve cuando quieras.",
+        options: [
+          { text: "Otra vez", action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: "Luego sigo", end: true }
+        ]
+      }
+    }
+  },
+
   // ─── Teacher (final exam) ────────────────────────────────────────────────
   teacher: {
     start: "root",

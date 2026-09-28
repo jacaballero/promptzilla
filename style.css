@@ -399,8 +399,18 @@ body.adventure {
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5));
   transition: filter 0.15s;
 }
+/* Optional tuned clickable box for a character (anchored at the feet) */
+.char-hit {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 2;
+}
 /* Character hover halo: glow that hugs the silhouette (not a rectangle) */
-.character-wrap:hover .character {
+.character-wrap:hover .character,
+.character-wrap.hovered .character {
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5))
           drop-shadow(0 0 5px rgba(255,210,60,0.95))
           drop-shadow(0 0 13px rgba(255,210,60,0.55));

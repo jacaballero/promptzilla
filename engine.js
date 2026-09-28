@@ -55,6 +55,11 @@ const SPRITES = {
     "assets/characters/students_group_5.png",   // 3: habla el del centro
     "assets/characters/students_group_6.png"    // 4: habla el de la derecha
   ],
+  "student-glasses": [
+    "assets/characters/student_glasses_yellow_idle_1.png",
+    "assets/characters/student_glasses_yellow_idle_3.png",
+    "assets/characters/student_glasses_yellow_idle_4.png"
+  ],
   promptzilla: [
     "assets/characters/promptzilla_idle_1.png",
     "assets/characters/promptzilla_idle_2.png",
@@ -183,6 +188,20 @@ function buildCharacter(c) {
 
   if (c.static) {
     wrap.style.pointerEvents = "none";   // ambient decor: let hotspots take the click
+  } else if (c.hit) {
+    // Tuned clickable box (percent of the sprite), anchored at the feet. The
+    // whole sprite box is made inert so only this box takes hover/click.
+    wrap.style.pointerEvents = "none";
+    const hit = document.createElement("div");
+    hit.className = "char-hit";
+    hit.style.pointerEvents = "auto";
+    hit.style.width = (c.hit.w ?? 60) + "%";
+    hit.style.height = (c.hit.h ?? 90) + "%";
+    hit.style.bottom = (c.hit.y ?? 0) + "%";
+    hit.addEventListener("click", e => { e.stopPropagation(); onCharacterClick(c); });
+    hit.addEventListener("mouseenter", () => wrap.classList.add("hovered"));
+    hit.addEventListener("mouseleave", () => wrap.classList.remove("hovered"));
+    wrap.appendChild(hit);
   } else {
     wrap.addEventListener("click", e => {
       e.stopPropagation();
