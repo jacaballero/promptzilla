@@ -58,7 +58,7 @@ window.CONTENT = {
     },
     {
       id: 4,
-      number: "4",
+      number: "5",
       title: "HTML semántico",
       question: "¿Cuál es la etiqueta semántica de HTML5 más adecuada para delimitar el <strong>contenido principal</strong> de una página?",
       options: [
@@ -71,7 +71,7 @@ window.CONTENT = {
     },
     {
       id: 5,
-      number: "5",
+      number: "4",
       title: "Etiquetas semánticas HTML5",
       type: "multiple",
       question: "¿Cuáles de estas son etiquetas <strong>semánticas</strong> de HTML5? <em>(Selecciona todas las correctas)</em>",

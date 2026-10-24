@@ -209,6 +209,83 @@ const LLM = (function () {
     }
   }
 
+  // Parse a JSON object out of a model reply (tolerates <think>, code fences, prose).
+  function parseJSONReply(raw) {
+    const t = stripThink(raw);
+    const start = t.indexOf("{");
+    const end = t.lastIndexOf("}");
+    if (start === -1 || end <= start) throw new Error("La respuesta no contiene JSON.");
+    return JSON.parse(t.slice(start, end + 1));
+  }
+
+  // Non-streamed request that returns a parsed JSON object matching `schema`.
+  // `cfgOverride` keys that are empty/null fall back to the `llm` config.
+  async function complete({ system, user, schema, schemaName, cfgOverride }) {
+    const c = Object.assign({}, llmCfg());
+    Object.entries(cfgOverride || {}).forEach(([k, v]) => {
+      if (v !== "" && v !== null && v !== undefined) c[k] = v;
+    });
+
+    const headers = { "Content-Type": "application/json" };
+    if (c.apiToken) headers["Authorization"] = `Bearer ${c.apiToken}`;
+
+    const isOpenAI = c.provider === "openai";
+    let body;
+    if (isOpenAI) {
+      body = {
+        model: c.model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user }
+        ],
+        stream: false,
+        max_tokens: c.maxTokens ?? 2048,
+        temperature: c.temperature ?? 0.3
+      };
+      if (schema) {
+        body.response_format = {
+          type: "json_schema",
+          json_schema: { name: schemaName || "result", schema }
+        };
+      }
+    } else {
+      body = {
+        model: c.model,
+        system,
+        prompt: user,
+        stream: false,
+        format: schema || "json",
+        options: {
+          num_predict: c.maxTokens ?? 2048,
+          temperature: c.temperature ?? 0.3
+        }
+      };
+      if (typeof c.think === "boolean") body.think = c.think;
+    }
+
+    await acquireSlot();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), c.timeoutMs || 90000);
+    try {
+      const resp = await fetch(c.endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error.message || data.error);
+      const raw = isOpenAI
+        ? (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+        : data.response;
+      return parseJSONReply(raw || "");
+    } finally {
+      clearTimeout(timer);
+      releaseSlot();
+    }
+  }
+
   // Pre-warm: load the model into memory so the first real query is not a cold
   // start. Non-blocking, best-effort; ignores result and errors.
   function warmup() {
@@ -229,7 +306,7 @@ const LLM = (function () {
     }).catch(() => { /* best-effort; ignore */ });
   }
 
-  return { query, warmup, cost, countWords };
+  return { query, complete, warmup, cost, countWords };
 })();
 
 window.LLM = LLM;

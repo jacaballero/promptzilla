@@ -9,7 +9,7 @@
 
 "use strict";
 
-/* global CHALLENGES, LLM, GAME, refreshHUD, window */
+/* global CHALLENGES, LLM, PromptEval, GAME, refreshHUD, window */
 
 const Challenge = (function () {
 
@@ -299,6 +299,7 @@ const Challenge = (function () {
     try {
       const { text, cost } = await LLM.query({ prompt, mode: consultMode, onToken });
       const deducted = deductTokens(cost);
+      PromptEval.record({ challengeId: ch.id, prompt, mode: consultMode, answer: text, cost: deducted });
       resp.innerHTML = `
         <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-cost">−${deducted} tokens</span></div>
         <div class="llm-text">${escapeHTML(text)}</div>`;
@@ -337,6 +338,7 @@ const Challenge = (function () {
       <button id="c-continue" class="btn-primary">Continuar →</button>
     `;
     $("c-continue").addEventListener("click", () => {
+      PromptEval.closeChallenge(ch, correct);
       close();
       if (correct && onWin) onWin();
       else if (!correct && onLose) onLose();

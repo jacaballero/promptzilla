@@ -14,7 +14,7 @@
 
 "use strict";
 
-/* global SCENES, DIALOGUES, Challenge */
+/* global SCENES, DIALOGUES, Challenge, PromptEval */
 
 // ─── Sprite frame registry ─────────────────────────────────────────────────
 const SPRITES = {
@@ -572,11 +572,35 @@ function showWin() {
       <p class="win-grade">${grade}</p>
       <p>Tokens gastados: <strong>${spent}</strong> · Restantes: <strong>${remaining}</strong></p>
       <p class="win-flavor">Promptzilla sigue en la ciudad, pero hoy no lo has cebado. La facultad respira.</p>
-      <button id="win-restart" class="btn-primary">Volver a empezar</button>
+      <div id="win-report" class="win-report" style="display:none">
+        <p class="rep-loading">Analizando tus prompts…</p>
+      </div>
+      <div class="win-actions">
+        <button id="win-download" class="btn-secondary" style="display:none">Descargar informe (HTML)</button>
+        <button id="win-restart" class="btn-primary">Volver a empezar</button>
+      </div>
     </div>`;
   document.body.appendChild(overlay);
+
+  if (PromptEval.enabled()) {
+    const reportEl = overlay.querySelector("#win-report");
+    const downloadBtn = overlay.querySelector("#win-download");
+    const restartBtn = overlay.querySelector("#win-restart");
+    reportEl.style.display = "block";
+    restartBtn.style.display = "none";
+    PromptEval.finalize().catch(() => null).then(report => {
+      if (!overlay.isConnected) return;
+      restartBtn.style.display = "";
+      if (!report) { reportEl.style.display = "none"; return; }
+      reportEl.innerHTML = PromptEval.buildReportHTML(report);
+      downloadBtn.style.display = "";
+      downloadBtn.addEventListener("click", () => PromptEval.downloadReport(report));
+    });
+  }
+
   overlay.querySelector("#win-restart").addEventListener("click", () => {
     overlay.remove();
+    PromptEval.reset();
     GAME.tokens = INITIAL_TOKENS;
     GAME.totalSpent = 0;
     GAME.flags = {};
