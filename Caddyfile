@@ -15,5 +15,12 @@
 		flush_interval -1
 	}
 
+	# Revalidate code on every load (cheap 304s) so deploys show up without a hard reload.
+	@code path / *.html *.js *.css
+	header @code Cache-Control "no-cache"
+
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=86400"
+
 	file_server
 }
