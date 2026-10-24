@@ -538,7 +538,8 @@ function handleAction(action) {
     dialogueEl.style.display = "none";
     Challenge.open(action.challengeId, {
       onWin: () => resumeDialogue(action.onWinGoto),
-      onLose: () => resumeDialogue(action.onLoseGoto)
+      onLose: () => resumeDialogue(action.onLoseGoto),
+      onExit: () => closeDialogue()
     });
   } else if (action.type === "win") {
     closeDialogue();

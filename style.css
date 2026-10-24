@@ -539,6 +539,18 @@ body.adventure {
   color: var(--purple-lt);
 }
 .challenge-card .c-tokens { color: var(--neon-green); font-size: 0.82rem; }
+.c-header-right { display: flex; align-items: center; gap: 10px; }
+.c-exit-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.c-exit-btn:hover:not(:disabled) { color: var(--text); border-color: var(--purple-lt); }
+.c-exit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 #c-question { font-size: 0.95rem; line-height: 1.5; }
 #c-question code, #c-options code {
   font-family: "Courier New", monospace;
@@ -671,6 +683,7 @@ body.adventure {
 .rep-copy { background: rgba(241,196,15,0.2); color: #f1c40f; }
 .rep-ok { color: var(--neon-green); font-size: 0.78rem; }
 .rep-ko { color: var(--neon-red); font-size: 0.78rem; }
+.rep-left { color: var(--text-dim); font-size: 0.78rem; }
 .rep-warn { color: #f1c40f; }
 .rep-none { color: var(--text-dim); font-style: italic; }
 .rep-fb dt { font-weight: 700; margin-top: 4px; }

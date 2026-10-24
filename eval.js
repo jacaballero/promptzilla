@@ -90,10 +90,12 @@ const PromptEval = (function () {
     buffer.push({ challengeId, prompt, mode, answer, cost });
   }
 
+  // correct: true/false, or null when the student left without answering.
   function closeChallenge(ch, correct) {
     if (!enabled() || !ch) return;
     const mine = buffer.filter(r => r.challengeId === ch.id);
     buffer = buffer.filter(r => r.challengeId !== ch.id);
+    if (correct === null && !mine.length) return;
 
     const texts = challengeTexts(ch);
     const items = [];
@@ -113,7 +115,7 @@ const PromptEval = (function () {
       challengeId: ch.id,
       number: ch.number,
       title: ch.title,
-      correct: !!correct,
+      correct: correct === null ? null : !!correct,
       items
     };
     attempts.push(attempt);
@@ -299,9 +301,11 @@ const PromptEval = (function () {
   }
 
   function attemptHTML(a, full) {
-    const result = a.correct
-      ? `<span class="rep-ok">✓ Acertada</span>`
-      : `<span class="rep-ko">✗ Fallada</span>`;
+    const result = a.correct === null
+      ? `<span class="rep-left">↩ Abandonada</span>`
+      : a.correct
+        ? `<span class="rep-ok">✓ Acertada</span>`
+        : `<span class="rep-ko">✗ Fallada</span>`;
     const body = a.items.length
       ? a.items.map(it => itemHTML(it, full)).join("")
       : `<p class="rep-none">${a.correct ? "Resuelto sin consultar" : "Respondido sin consultar"}</p>`;
@@ -328,7 +332,7 @@ const PromptEval = (function () {
     .rep-item{border:1px solid #ddd;border-radius:6px;padding:.5rem .8rem;margin:.5rem 0}
     .rep-item summary{cursor:pointer;font-weight:600}
     .rep-tag{font-size:.75rem;background:#eee;border-radius:4px;padding:1px 6px;margin-left:4px}
-    .rep-copy{background:#ffe1c2}.rep-ok{color:#1a7f37}.rep-ko{color:#c62828}.rep-warn{color:#a15c00}
+    .rep-copy{background:#ffe1c2}.rep-ok{color:#1a7f37}.rep-ko{color:#c62828}.rep-left{color:#666}.rep-warn{color:#a15c00}
     .rep-fb dt{font-weight:600;margin-top:.4rem}.rep-fb dd{margin:0 0 0 1rem}
     .rep-use{background:#f6f6f6;border-radius:4px;padding:.4rem .6rem;margin:.3rem 0}
     .rep-meta{font-size:.8rem;color:#666}.rep-answer{white-space:pre-wrap}`;

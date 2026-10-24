@@ -21,6 +21,7 @@ const Challenge = (function () {
   let busy = false;                 // guards against double consultations
   let onWin = null;
   let onLose = null;
+  let onExit = null;
 
   // ─── Helpers ───────────────────────────────────────────────────────────
   function getCorrectSet(c) {
@@ -46,6 +47,7 @@ const Challenge = (function () {
     tokensThisChallenge = 0;
     onWin = opts && opts.onWin;
     onLose = opts && opts.onLose;
+    onExit = opts && opts.onExit;
     build();
     renderQuestion();
   }
@@ -58,7 +60,10 @@ const Challenge = (function () {
       <div class="challenge-card">
         <div class="challenge-header">
           <span id="c-title"></span>
-          <span id="c-tokens" class="c-tokens"></span>
+          <span class="c-header-right">
+            <span id="c-tokens" class="c-tokens"></span>
+            <button id="c-exit" class="c-exit-btn" title="Salir del reto y volver más tarde">✕ Salir</button>
+          </span>
         </div>
         <div id="c-question"></div>
         <div id="c-options"></div>
@@ -76,6 +81,7 @@ const Challenge = (function () {
     document.body.appendChild(overlay);
     wireLLMSection();
     $("c-submit").addEventListener("click", submit);
+    $("c-exit").addEventListener("click", exit);
   }
 
   function $(id) { return overlay.querySelector("#" + id); }
@@ -120,6 +126,14 @@ const Challenge = (function () {
     if (overlay) { overlay.remove(); overlay = null; }
   }
 
+  // Leave without answering; prompts already made are still evaluated.
+  function exit() {
+    if (busy) return;
+    PromptEval.closeChallenge(ch, null);
+    close();
+    if (onExit) onExit();
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────
   function renderQuestion() {
     $("c-title").textContent = ch.title;
@@ -155,6 +169,7 @@ const Challenge = (function () {
 
   function refreshLLMAvailability() {
     if ($("c-prompt")) $("c-prompt").disabled = busy || GAME.tokens <= 0;
+    if ($("c-exit")) $("c-exit").disabled = busy;
     updateCost();   // sets #c-consult disabled based on affordability + busy
     $("c-no-tokens").style.display = GAME.tokens > 0 ? "none" : "block";
   }
@@ -329,6 +344,7 @@ const Challenge = (function () {
     $("c-llm").style.display = "none";
     $("c-submit").style.display = "none";
     $("c-multi-hint").style.display = "none";
+    $("c-exit").style.display = "none";
 
     $("c-feedback").innerHTML = `
       <div class="fb-icon ${correct ? "fb-correct" : "fb-wrong"}">${correct ? "✓" : "✗"}</div>
