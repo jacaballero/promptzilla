@@ -212,13 +212,20 @@ body.adventure {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 16px;
+  padding: 6px 16px;
+  height: auto;
 }
 .adventure #hud-title {
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  color: var(--purple-lt);
-  text-shadow: 0 0 14px rgba(155,85,216,0.5);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  line-height: 0;
+}
+.adventure #hud-title img {
+  height: 60px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(0,255,136,0.18));
 }
 .adventure #hud-tokens {
   font-size: 0.85rem;

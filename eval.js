@@ -328,6 +328,8 @@ const PromptEval = (function () {
   const DOWNLOAD_CSS = `
     body{font-family:system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;color:#222;line-height:1.45}
     h1{margin-bottom:.2rem}h2{margin-top:2rem}h3{margin:1.2rem 0 .4rem}
+    .rep-head{display:flex;align-items:center;gap:14px}.rep-head img{height:56px;width:auto}
+    .rep-head h1{font-size:1.5rem;margin:0}.rep-head p{margin:.1rem 0 0;color:#666;font-size:.85rem}
     .rep-attempt{border-top:1px solid #ddd;padding-top:.5rem}
     .rep-item{border:1px solid #ddd;border-radius:6px;padding:.5rem .8rem;margin:.5rem 0}
     .rep-item summary{cursor:pointer;font-weight:600}
@@ -339,10 +341,14 @@ const PromptEval = (function () {
 
   function downloadReport(report) {
     const date = new Date().toLocaleString("es-ES");
+    const logo = window.PROMPTZILLA_LOGO;
+    const head = logo
+      ? `<header class="rep-head"><img src="${logo}" alt="Promptzilla"><div><h1>Informe de tus prompts</h1><p>${esc(date)}</p></div></header>`
+      : `<h1>Promptzilla — Informe de tus prompts</h1><p>${esc(date)}</p>`;
     const html = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><title>Promptzilla — Informe de prompts</title>
 <style>${DOWNLOAD_CSS}</style></head>
-<body><h1>Promptzilla — Informe de tus prompts</h1><p>${esc(date)}</p>
+<body>${head}
 ${buildReportHTML(report, { full: true })}</body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
     const a = document.createElement("a");
