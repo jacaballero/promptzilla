@@ -11,12 +11,33 @@
 </head>
 <body class="adventure">
 
+<!-- ── Start screen (preloads every image before the game starts) ─────────── -->
+<div id="start-screen">
+  <div class="start-card">
+    <img class="start-logo" src="assets/logos/promptzilla-lime.png" alt="Promptzilla">
+    <p class="start-intro">
+      Año 2035. <strong>Promptzilla</strong>, un monstruo que engorda con cada prompt perezoso,
+      ronda la Universidad. Tu misión: superar los retos sin cebarlo.
+    </p>
+    <ul class="start-rules">
+      <li>Haz clic en el escenario para moverte y en los personajes para hablar con ellos.</li>
+      <li>Algunos personajes te plantearán retos relacionados con la asignatura.</li>
+      <li>En cada reto puedes consultar a la IA, pero gasta <strong>tokens</strong>: el modo socrático cuesta la mitad que el directo.</li>
+      <li>Cada reto solo se puede responder una vez. Si fallas, verás la solución.</li>
+      <li id="start-report-rule">Al final recibirás un informe sobre cómo has usado la IA.</li>
+    </ul>
+    <div class="start-progress"><div id="start-bar"></div></div>
+    <p id="start-status">Cargando…</p>
+    <button id="start-btn" class="btn-primary" disabled>Cargando…</button>
+  </div>
+</div>
+
 <div id="game">
 
   <!-- ── HUD ──────────────────────────────────────────────────────────────── -->
   <header id="hud">
     <span id="hud-title"><img src="assets/logos/promptzilla-lime.png" alt="Promptzilla"></span>
-    <span id="hud-tokens">⚡ 100 / 100 tokens</span>
+    <span id="hud-tokens">150 / 150 tokens</span>
   </header>
 
   <!-- ── Stage (scene is built here by the engine) ────────────────────────── -->

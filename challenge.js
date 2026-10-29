@@ -90,11 +90,18 @@ const Challenge = (function () {
   function llmSectionHTML() {
     return `
         <div id="c-llm">
-          <span class="c-llm-title">🤖 Consultar al LLM</span>
+          <span class="c-llm-title">Consultar al LLM</span>
           <div class="c-mode-row">
             <span class="c-mode-label">Modo:</span>
-            <button class="c-mode-btn active" data-mode="direct">🎯 Directo (×2)</button>
-            <button class="c-mode-btn" data-mode="socratic">🤔 Socrático (×1)</button>
+            <button class="c-mode-btn active" data-mode="direct">Directo (×2)</button>
+            <button class="c-mode-btn" data-mode="socratic">Socrático (×1)</button>
+            <span class="c-info-wrap">
+              <button type="button" class="c-info-btn" aria-label="¿Qué es cada modo?" aria-describedby="c-mode-help">i</button>
+              <span id="c-mode-help" role="tooltip">
+                <span><strong>Directo (×2):</strong> la IA te responde con la solución completa. Cuesta el doble de tokens.</span>
+                <span><strong>Socrático (×1):</strong> la IA no te da la solución, solo pistas y preguntas para que llegues tú. Cuesta la mitad.</span>
+              </span>
+            </span>
           </div>
           <div class="c-llm-input">
             <input type="text" id="c-prompt" placeholder="Escribe tu consulta y pulsa Consultar (o Enter)…" autocomplete="off">
@@ -164,7 +171,7 @@ const Challenge = (function () {
   }
 
   function updateTokenLabel() {
-    $("c-tokens").textContent = `⚡ ${GAME.tokens} tokens`;
+    $("c-tokens").textContent = `${GAME.tokens} tokens`;
   }
 
   function refreshLLMAvailability() {
@@ -349,8 +356,8 @@ const Challenge = (function () {
     $("c-feedback").innerHTML = `
       <div class="fb-icon ${correct ? "fb-correct" : "fb-wrong"}">${correct ? "✓" : "✗"}</div>
       <div class="fb-result ${correct ? "fb-correct" : "fb-wrong"}">${correct ? "¡Correcto!" : "Incorrecto"}</div>
-      <div class="fb-answer">${answerLabel}: ${correctTexts}</div>
-      <div class="fb-tokens">${tokensThisChallenge > 0 ? `Tokens usados: ${tokensThisChallenge}` : "✨ Resuelto sin consultar al LLM"}</div>
+      ${correct ? "" : `<div class="fb-answer">${answerLabel}: ${correctTexts}</div>`}
+      ${tokensThisChallenge > 0 ? `<div class="fb-tokens">Tokens usados: ${tokensThisChallenge}</div>` : ""}
       <button id="c-continue" class="btn-primary">Continuar →</button>
     `;
     $("c-continue").addEventListener("click", () => {

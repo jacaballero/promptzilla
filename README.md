@@ -61,7 +61,7 @@ defaults:
 ```js
 window.APP_CONFIG = {
   economy: {
-    initialTokens: 100,     // starting tokens
+    initialTokens: 150,     // starting tokens
     directFactor: 2,        // cost multiplier for DIRECT consultations
     socraticFactor: 1       // cost multiplier for SOCRATIC consultations
   },

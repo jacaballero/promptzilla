@@ -13,7 +13,7 @@
 /* global window */
 window.APP_CONFIG_DEFAULT = {
   economy: {
-    initialTokens: 100,
+    initialTokens: 150,
 
     // Word-based cost = (baseCost + words*costPerWord)*factor,
     // charged ONLY on a successful consultation.

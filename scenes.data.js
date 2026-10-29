@@ -26,11 +26,14 @@ window.SCENES = {
       theme: "hallway"
     },
     walk: {
-      yMin: 28, yMax: 76, xMin: 16, xMax: 84, near: 1.05, far: 0.43, depthFarY: 24,
+      yMin: 28, yMax: 76, xMin: 16, xMax: 84, near: 1.05, far: 0.50, depthFarY: 24,
       // Walkable corridor floor. Each point is [x%, y%]. Adjust to hug the floor.
       polygon: [
         [37, 77],   // 1 · frente-izquierda (borde izq. de la alfombra)
         [23, 58],   // 2 · lateral izquierdo (donde el suelo se ensancha)
+        [19, 52],   // 2a · franja entre el mostrador y la pared, frente al aula 0.01
+        [24, 46],   // 2b · pie de la puerta del aula 0.01 (sin pisar el marco)
+        [30, 42],   // 2c · vuelta a la pared, antes de la papelera
         [41, 28],   // 3 · fondo-izquierda (hacia las escaleras)
         [57, 28],   // 4 · fondo-derecha
         [78, 58],   // 5 · lateral derecho
@@ -41,12 +44,14 @@ window.SCENES = {
     // Walls are excluded by the polygon; only real props block the feet.
     obstacles: [
       { x: 10, y: 56, w: 30, h: 20 },  // mostrador / recepción (izquierda)
+      { x: 27.3, y: 35.5, w: 3.5, h: 3.5 }, // fuente (izquierda, junto al aula 0.01)
+      { x: 32.5, y: 33.5, w: 2.2, h: 2.4 },   // maceta junto al aula 0.02
       { x: 68, y: 39, w: 6, h: 4 }   // papelera (derecha)
     ],
     entryPoints: {
       default:        { x: 50, y: 72 },   // on the entrance mat, inside the corridor
-      fromClassroom:  { x: 32, y: 54 },
-      fromClassroom2: { x: 42, y: 34 },
+      fromClassroom:  { x: 21.5, y: 50 },
+      fromClassroom2: { x: 40, y: 32 },
       fromStudy:      { x: 70, y: 60 },
       fromRooftop:    { x: 48, y: 38 }
     },
@@ -58,7 +63,7 @@ window.SCENES = {
         kind: "exit",
         target: "classroom",
         x: 11, y: 7, w: 11, h: 45,
-        approach: { x: 30, y: 54 }
+        approach: { x: 21.5, y: 50 }
       },
       {
         id: "door-classroom2",
@@ -66,7 +71,7 @@ window.SCENES = {
         kind: "exit",
         target: "classroom2",
         x: 33.4, y: 7, w: 5, h: 28,
-        approach: { x: 42, y: 33 }
+        approach: { x: 40, y: 32 }
       },
       {
         id: "door-study",
@@ -186,14 +191,16 @@ window.SCENES = {
     name: "Sala de estudio",
     caption: "Sala de estudio. Dos compañeros fingen repasar mientras discuten de etiquetas HTML.",
     bg: { image: "assets/scenes/scene_study_room.png", theme: "study" },
-    walk: { yMin: 62, yMax: 95, near: 1.0, far: 0.85 },
+    // yMin keeps the feet off the chairs; depthFarY keeps the perspective anchored at 62.
+    walk: { yMin: 67, yMax: 95, near: 1.0, far: 0.72, depthFarY: 62 },
     entryPoints: {
       default:      { x: 22, y: 88 },
       fromEntrance: { x: 20, y: 88 }
     },
     characters: [
-      { id: "student-girl", sprite: "student-girl", x: 40, y: 88, dialogue: "studentGirl" , hit: { w: 32, h: 96 } },
-      { id: "student-boy",  sprite: "student-boy",  x: 60, y: 84, dialogue: "studentBoy", hit: { w: 33, h: 98 } }
+      // `scale` offsets the steeper perspective (far 0.72) so the girl keeps her size.
+      { id: "student-girl", sprite: "student-girl", x: 38.5, y: 88, scale: 1.03, dialogue: "studentGirl" , hit: { w: 32, h: 96 } },
+      { id: "student-boy",  sprite: "student-boy",  x: 66, y: 93, dialogue: "studentBoy", hit: { w: 33, h: 98 } }
     ],
     hotspots: [
       {
@@ -210,7 +217,7 @@ window.SCENES = {
         label: "Máquina de café",
         kind: "look",
         x: 80, y: 9, w: 20, h: 58,
-        approach: { x: 74, y: 84 },
+        approach: { x: 79, y: 70 },
         look: "Una máquina de café con una pegatina: «Powered by IA». Cobra en tokens. Por supuesto que cobra en tokens."
       }
     ]
@@ -222,13 +229,18 @@ window.SCENES = {
     name: "Azotea de la Facultad",
     caption: "La azotea. Al atardecer, sobre la ciudad… y ahí está él, digiriendo tokens.",
     bg: { image: "assets/scenes/scene_rooftop.png", theme: "hallway" },
-    walk: { yMin: 64, yMax: 90, xMin: 18, xMax: 95, near: 1.0, far: 0.82 },
+    walk: { yMin: 64, yMax: 90, xMin: 18, xMax: 95, near: 1.0, far: 0.60 },
     entryPoints: {
       default:      { x: 26, y: 86 },
       fromCorridor: { x: 26, y: 86 }
     },
     characters: [
-      { id: "promptzilla", sprite: "promptzilla", x: 66, y: 89, scale: 1.65, dialogue: "promptzilla" , hit: { w: 66, h: 96 } }
+      // Frames: 0 = eyes open, 1 = half-closed, 2 = closed. Never holds a frame
+      // longer than ~1 s; one full blink per ~8 s cycle.
+      { id: "promptzilla", sprite: "promptzilla", x: 66, y: 97, scale: 1.65, dialogue: "promptzilla", hit: { w: 66, h: 96 },
+        noShadow: true, animMs: 500,   // noShadow: no floor ellipse nor drop-shadow
+        approach: { x: 43, y: 90 },
+        animSeq: [0, 0, 1, 0, 0, 1, 0, 0, 1, 2, 1, 0, 0, 1, 0, 1] }
     ],
     hotspots: [
       {

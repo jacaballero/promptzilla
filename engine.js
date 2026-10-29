@@ -67,7 +67,7 @@ const SPRITES = {
   ]
 };
 
-const INITIAL_TOKENS = (window.CONFIG && window.CONFIG.economy && window.CONFIG.economy.initialTokens) || 100;
+const INITIAL_TOKENS = (window.CONFIG && window.CONFIG.economy && window.CONFIG.economy.initialTokens) || 150;
 const WALK_SPEED = 39; // percent of stage per second (euclidean)
 const DEFAULT_WALK = { yMin: 58, yMax: 90, near: 1.4, far: 0.01 };
 
@@ -99,17 +99,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("dragstart", e => e.preventDefault());   // block sprite dragging
 
-  preloadSprites();
   refreshHUD();
+  if (window.LLM && LLM.warmup) LLM.warmup();   // pre-warm the model while the start screen is shown
+  showStartScreen();
+});
+
+// ─── Start screen ───────────────────────────────────────────────────────────
+// Preloads every image while the player reads the intro; the scene is only
+// built after "Empezar", so the first room never waits on the network.
+function showStartScreen() {
+  const screen = document.getElementById("start-screen");
+  if (!screen) { startGame(); return; }
+
+  const bar = document.getElementById("start-bar");
+  const status = document.getElementById("start-status");
+  const btn = document.getElementById("start-btn");
+  if (window.PromptEval && !PromptEval.enabled()) {
+    const rule = document.getElementById("start-report-rule");
+    if (rule) rule.style.display = "none";
+  }
+
+  let ready = false;
+  const enable = (label) => {
+    if (ready) return;
+    ready = true;
+    btn.disabled = false;
+    btn.textContent = "Empezar →";
+    status.textContent = label;
+    btn.focus({ preventScroll: true });
+  };
+
+  preloadAssets((done, total) => {
+    const pct = Math.round((done / total) * 100);
+    bar.style.width = pct + "%";
+    if (!ready) status.textContent = `Cargando… ${pct}%`;
+  }).then(() => enable("¡Todo listo!"));
+  // Never trap the player behind a stalled request.
+  setTimeout(() => enable("Aún se está cargando, pero ya puedes empezar."), 30000);
+
+  btn.addEventListener("click", () => {
+    if (!ready) return;
+    screen.remove();
+    startGame();
+  });
+}
+
+function startGame() {
   changeScene("entrance", "default");
   startPlayerAnim();
-
-  if (window.LLM && LLM.warmup) LLM.warmup();   // pre-warm the model on boot
-});
+}
 
 // ─── HUD ──────────────────────────────────────────────────────────────────────
 function refreshHUD() {
-  if (hudTokensEl) hudTokensEl.textContent = `⚡ ${GAME.tokens} / ${INITIAL_TOKENS} tokens`;
+  if (hudTokensEl) hudTokensEl.textContent = `${GAME.tokens} / ${INITIAL_TOKENS} tokens`;
 }
 window.refreshHUD = refreshHUD;
 
@@ -156,6 +198,51 @@ function changeScene(sceneId, entryKey) {
   }
 
   if (captionEl) captionEl.textContent = scene.caption || scene.name;
+  if (DEBUG) drawWalkDebug(scene);
+}
+
+// ─── Debug mode (open the game with ?debug) ─────────────────────────────────
+// Draws the walk-area overlay and lets dialogues skip progression checks
+// (e.g. the teacher's exam is available without doing the practice challenges).
+const DEBUG = new URLSearchParams(location.search).has("debug");
+window.DEBUG = DEBUG;
+
+// Walk-area overlay:
+// Green: walkable polygon (vertices numbered as in scenes.data.js).
+// Red: obstacles. Yellow: hotspot/character approach points. The top-left
+// readout shows the cursor position in scene percentages.
+
+function drawWalkDebug(scene) {
+  const w = scene.walk || {};
+  const layer = document.createElement("div");
+  layer.className = "walk-debug";
+  const poly = w.polygon || [[w.xMin ?? 0, w.yMin], [w.xMax ?? 100, w.yMin], [w.xMax ?? 100, w.yMax], [w.xMin ?? 0, w.yMax]];
+  const pts = poly.map(p => p.join(",")).join(" ");
+  const rects = (scene.obstacles || []).map(o =>
+    `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" class="wd-obstacle"/>`).join("");
+  layer.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polygon points="${pts}" class="wd-poly"/>${rects}</svg>`;
+
+  const label = (x, y, text, cls) => {
+    const el = document.createElement("span");
+    el.className = "wd-label " + cls;
+    el.style.left = x + "%";
+    el.style.top = y + "%";
+    el.textContent = text;
+    layer.appendChild(el);
+  };
+  poly.forEach(([x, y], i) => label(x, y, `${i + 1} (${x}, ${y})`, "wd-vertex"));
+  scene.hotspots.forEach(h => h.approach && label(h.approach.x, h.approach.y, `▼ ${h.label}`, "wd-approach"));
+  (scene.characters || []).forEach(c => c.approach && label(c.approach.x, c.approach.y, `▼ ${c.id}`, "wd-approach"));
+
+  const cursor = document.createElement("span");
+  cursor.className = "wd-cursor";
+  layer.appendChild(cursor);
+  stageEl.addEventListener("mousemove", e => {
+    const r = stageEl.getBoundingClientRect();
+    cursor.textContent = `x ${((e.clientX - r.left) / r.width * 100).toFixed(1)} · y ${((e.clientY - r.top) / r.height * 100).toFixed(1)}`;
+  });
+  stageEl.appendChild(layer);
 }
 
 function buildHotspot(h) {
@@ -177,6 +264,7 @@ function buildHotspot(h) {
 function buildCharacter(c) {
   const wrap = document.createElement("div");
   wrap.className = "character-wrap";
+  if (c.noShadow) wrap.classList.add("no-shadow");
   positionEntity(wrap, c.x, c.y);
   if (c.scale) wrap.style.setProperty("--cscale", c.scale);   // per-character size
 
@@ -441,9 +529,11 @@ function onHotspotClick(h) {
 function onCharacterClick(c) {
   if (curDialogue) return;
   const off = 10;
-  const ax = c.x < GAME.player.x ? c.x + off : c.x - off;
+  // Optional per-character `approach` point (e.g. for very wide sprites).
+  const ax = c.approach ? c.approach.x : (c.x < GAME.player.x ? c.x + off : c.x - off);
+  const ay = c.approach ? c.approach.y : c.y;
   closeBubble();
-  walkTo(ax, c.y, () => {
+  walkTo(ax, ay, () => {
     GAME.player.facing = c.x < GAME.player.x ? "left" : "right";
     const flip = GAME.player.facing === "left" ? -1 : 1;
     positionEntity(playerEl, GAME.player.x, GAME.player.y, flip);
@@ -507,7 +597,7 @@ function renderDialogue(node) {
 
   const npc = document.createElement("div");
   npc.className = "dlg-npc";
-  npc.innerHTML = node.npc || "";
+  npc.innerHTML = (typeof node.npc === "function" ? node.npc(GAME) : node.npc) || "";
   dialogueEl.appendChild(npc);
 
   const opts = document.createElement("div");
@@ -515,6 +605,8 @@ function renderDialogue(node) {
   (node.options || []).forEach(opt => {
     if (opt.requires && !GAME.flags[opt.requires]) return;
     if (opt.hideIfFlag && GAME.flags[opt.hideIfFlag]) return;
+    // An answered challenge (right or wrong) can never be repeated.
+    if (opt.action && opt.action.type === "challenge" && isChallengeAnswered(opt.action.challengeId)) return;
     const btn = document.createElement("button");
     btn.className = "dlg-option";
     btn.innerHTML = opt.text;
@@ -533,18 +625,40 @@ function chooseOption(opt) {
   closeDialogue();
 }
 
+function failedFlag(challengeId) { return "failedChallenge" + challengeId; }
+function answeredFlag(challengeId) { return "answeredChallenge" + challengeId; }
+function isChallengeAnswered(challengeId) { return !!GAME.flags[answeredFlag(challengeId)]; }
+
 function handleAction(action) {
   if (action.type === "challenge") {
     dialogueEl.style.display = "none";
     Challenge.open(action.challengeId, {
-      onWin: () => resumeDialogue(action.onWinGoto),
-      onLose: () => resumeDialogue(action.onLoseGoto),
+      onWin: () => {
+        GAME.flags[answeredFlag(action.challengeId)] = true;
+        resumeDialogue(action.onWinGoto);
+      },
+      onLose: () => {
+        GAME.flags[answeredFlag(action.challengeId)] = true;
+        GAME.flags[failedFlag(action.challengeId)] = true;
+        resumeDialogue(action.onLoseGoto);
+      },
       onExit: () => closeDialogue()
     });
-  } else if (action.type === "win") {
+  } else if (action.type === "win" || action.type === "lose") {
     closeDialogue();
-    showWin();
+    showEnd();
   }
+}
+
+// Every challenge the player can meet: collected from the dialogue actions, so
+// adding a new one to DIALOGUES automatically counts towards the final grade.
+function gameChallengeIds() {
+  const ids = new Set();
+  Object.values(DIALOGUES).forEach(d => Object.values(d.nodes).forEach(n =>
+    (n.options || []).forEach(o => {
+      if (o.action && o.action.type === "challenge") ids.add(o.action.challengeId);
+    })));
+  return [...ids];
 }
 
 function resumeDialogue(nodeId) {
@@ -558,21 +672,34 @@ function closeDialogue() {
   dialogueEl.innerHTML = "";
 }
 
-// ─── Win screen ─────────────────────────────────────────────────────────────
-function showWin() {
+// ─── End screen ─────────────────────────────────────────────────────────────
+function showEnd() {
   const spent = GAME.totalSpent;
   const remaining = GAME.tokens;
-  const grade = remaining >= 70 ? "Matrícula de honor"
-              : remaining >= 40 ? "Aprobado con nota"
-              : "Aprobado raspado";
+
+  // Grade by number of challenges answered correctly, out of all the ones in the game.
+  const ids = gameChallengeIds();
+  const total = ids.length;
+  const correct = ids.filter(id => GAME.flags[answeredFlag(id)] && !GAME.flags[failedFlag(id)]).length;
+  const letter = "ABCDE"[Math.min(total - correct, 4)];
+  const summary = correct === 0 ? `No acertaste ninguno de los ${total} retos.`
+                                : `Acertaste ${correct} de los ${total} retos.`;
+
+  const usedRatio = spent / INITIAL_TOKENS;
+  const flavor = usedRatio > 0.9
+    ? "Has cebado a Promptzilla: se ha zampado casi todos tus tokens y ahora ronda la facultad más grande que nunca."
+    : usedRatio < 0.25
+    ? "Has puesto a Promptzilla a dieta: apenas ha probado tus tokens y se ha quedado con hambre."
+    : "Promptzilla sigue en la ciudad, pero hoy no lo has cebado. La facultad respira.";
+
   const overlay = document.createElement("div");
   overlay.id = "win-screen";
   overlay.innerHTML = `
     <div class="win-card">
-      <h1>🎓 ¡Examen superado!</h1>
-      <p class="win-grade">${grade}</p>
+      <h1 class="win-letter grade-${letter.toLowerCase()}">${letter}</h1>
+      <p class="win-grade">${summary}</p>
       <p>Tokens gastados: <strong>${spent}</strong> · Restantes: <strong>${remaining}</strong></p>
-      <p class="win-flavor">Promptzilla sigue en la ciudad, pero hoy no lo has cebado. La facultad respira.</p>
+      <p class="win-flavor">${flavor}</p>
       <div id="win-report" class="win-report" style="display:none">
         <p class="rep-loading">Analizando tus prompts…</p>
       </div>
@@ -610,18 +737,31 @@ function showWin() {
   });
 }
 
-// ─── Sprite idle cycling ────────────────────────────────────────────────────
-function preloadSprites() {
-  const urls = Object.values(SPRITES).flat();
-  // Also preload every scene background/foreground so entering a room for the
-  // first time doesn't wait on a network fetch.
+// ─── Asset preloading ───────────────────────────────────────────────────────
+// Images are kept referenced so the browser keeps them decoded in memory.
+const preloadedImages = [];
+
+function preloadAssets(onProgress) {
+  const urls = new Set(Object.values(SPRITES).flat());
   Object.values(SCENES).forEach(s => {
-    if (s.bg && s.bg.image) urls.push(s.bg.image);
-    if (s.bg && s.bg.foregroundImage) urls.push(s.bg.foregroundImage);
+    if (s.bg && s.bg.image) urls.add(s.bg.image);
+    if (s.bg && s.bg.foregroundImage) urls.add(s.bg.foregroundImage);
   });
-  urls.forEach(src => { const i = new Image(); i.src = src; });
+  const total = urls.size;
+  let done = 0;
+  return Promise.all([...urls].map(src => new Promise(resolve => {
+    const img = new Image();
+    preloadedImages.push(img);
+    const finish = () => { done++; if (onProgress) onProgress(done, total); resolve(); };
+    // Count on download; decode in the background (browsers defer decode() in
+    // hidden tabs, which would otherwise stall the progress bar).
+    img.onload = () => { if (img.decode) img.decode().catch(() => {}); finish(); };
+    img.onerror = finish;   // a missing image must not block the start
+    img.src = src;
+  })));
 }
 
+// ─── Sprite idle cycling ────────────────────────────────────────────────────
 function startIdle(imgEl, frames, period, delay, seq) {
   const order = seq && seq.length ? seq : [0, 1, 2, 1];
   let idx = 0;
