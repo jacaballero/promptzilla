@@ -9,7 +9,7 @@
 
 "use strict";
 
-/* global CHALLENGES, LLM, PromptEval, GAME, refreshHUD, window */
+/* global CHALLENGES, LLM, PromptEval, XAPI, GAME, refreshHUD, window */
 
 const Challenge = (function () {
 
@@ -48,6 +48,7 @@ const Challenge = (function () {
     onWin = opts && opts.onWin;
     onLose = opts && opts.onLose;
     onExit = opts && opts.onExit;
+    XAPI.challengeOpened(ch);
     build();
     renderQuestion();
   }
@@ -118,6 +119,7 @@ const Challenge = (function () {
       btn.addEventListener("click", () => {
         overlay.querySelectorAll(".c-mode-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
+        if (mode !== btn.dataset.mode) XAPI.modeSelected(ch, btn.dataset.mode);
         mode = btn.dataset.mode;
         updateCost();
       });
@@ -136,6 +138,7 @@ const Challenge = (function () {
   // Leave without answering; prompts already made are still evaluated.
   function exit() {
     if (busy) return;
+    XAPI.challengeExited(ch);
     PromptEval.closeChallenge(ch, null);
     close();
     if (onExit) onExit();
@@ -252,7 +255,11 @@ const Challenge = (function () {
   async function consult(consultMode, prompt) {
     if (busy) return;
     if (!prompt) { showMsg("⚠️ Escribe una consulta antes de preguntar."); return; }
-    if (hasProfanity(prompt)) { showMsg("⚠️ Cuida el lenguaje: reformula tu consulta sin palabras ofensivas."); return; }
+    if (hasProfanity(prompt)) {
+      XAPI.tutorBlocked(ch, consultMode, LLM.countWords(prompt));
+      showMsg("⚠️ Cuida el lenguaje: reformula tu consulta sin palabras ofensivas.");
+      return;
+    }
     if (GAME.tokens <= 0) { showMsg("⚠️ Sin tokens. No puedes consultar al LLM."); return; }
 
     const cost = estimatedCost(consultMode, prompt);
@@ -318,9 +325,15 @@ const Challenge = (function () {
         : '<span class="llm-cursor">▋</span>';
     };
 
+    const startedAt = Date.now();
+    XAPI.tutorAsked(ch, consultMode, LLM.countWords(prompt), estimatedCost(consultMode, prompt));
     try {
-      const { text, cost } = await LLM.query({ prompt, mode: consultMode, onToken });
+      const { text, cost, counts } = await LLM.query({ prompt, mode: consultMode, onToken });
       const deducted = deductTokens(cost);
+      XAPI.tutorReceived(ch, consultMode, {
+        cost: deducted, ms: Date.now() - startedAt,
+        evalCount: counts ? counts.eval_count : undefined, chars: text.length
+      });
       PromptEval.record({ challengeId: ch.id, prompt, mode: consultMode, answer: text, cost: deducted });
       resp.innerHTML = `
         <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-cost">−${deducted} tokens</span></div>
@@ -329,9 +342,17 @@ const Challenge = (function () {
       if ($("c-cost")) $("c-cost").textContent = "";
     } catch (err) {
       console.warn("LLM live query failed:", err);
+      XAPI.tutorFailed(ch, consultMode, failureReason(err), Date.now() - startedAt);
       resp.innerHTML = `<div class="llm-msg-warn">📡 La conexión ha fallado, cosas de la IA… vuelve a intentarlo.</div>`;
       resp.classList.add("visible");
     }
+  }
+
+  function failureReason(err) {
+    if (err && err.name === "AbortError") return "timeout";
+    if (err && /^HTTP \d+/.test(err.message)) return "http";
+    if (err && err.name === "TypeError") return "network";
+    return "model";
   }
 
   function showMsg(msg) {
@@ -343,6 +364,7 @@ const Challenge = (function () {
   function submit() {
     if (selected.length === 0) return;
     const correct = matches(selected, ch);
+    XAPI.challengeAnswered(ch, selected, correct, tokensThisChallenge);
 
     const correctTexts = getCorrectSet(ch).map(i => ch.options[i].text).join(" y ");
     const answerLabel = getCorrectSet(ch).length > 1 ? "Respuestas correctas" : "Respuesta correcta";
@@ -361,6 +383,7 @@ const Challenge = (function () {
       <button id="c-continue" class="btn-primary">Continuar →</button>
     `;
     $("c-continue").addEventListener("click", () => {
+      XAPI.challengeClosed();
       PromptEval.closeChallenge(ch, correct);
       close();
       if (correct && onWin) onWin();

@@ -177,3 +177,50 @@ internal network without a public domain, plain HTTP is enough.
 
 To deploy elsewhere (another server or university), just change
 `LLM_UPSTREAM` in `.env` and, if needed, `model` in `config.js`. Nothing else.
+
+## Interaction logging (xAPI) and process mining
+
+With `xapi.enabled: true` (default in `config.prod.example.js`, off in
+`config.default.js`) the game sends anonymous xAPI statements for every
+relevant action (scenes, hotspots, characters, dialogue options, challenges,
+AI consultations, prompt-evaluation metadata, game start/end/abandon). Each game
+gets a fresh random actor and registration (the process-mining case id); no
+prompt or answer text is stored. Add `?group=<name>` to the game URL to tag a
+class/group. Vocabulary: xAPI Serious Games Profile + ADL verbs.
+
+Compose runs a **SQL LRS** (`lrs`) backed by **Postgres** (`db`). The browser
+only POSTs to `/xapi/statements` on the game origin; Caddy forwards it to the
+LRS adding the credentials (any other `/xapi/*` request gets `404`).
+
+1. Fill the `LRS_*` variables in `.env` (see `.env.example`). `LRS_BASIC_AUTH`
+   must be `printf 'LRS_API_KEY:LRS_API_SECRET' | base64`. Admin user and API
+   credentials are seeded on the first start.
+2. `docker compose up --build -d`.
+3. LRS admin UI: `http://<host>:${LRS_PORT}/admin` (default `8081`).
+   Postgres listens on `${LRS_DB_BIND}:${LRS_DB_PORT}` (default `127.0.0.1:5433`).
+
+Export an event log (CSV for Disco, XES for ProM / PM4Py). The exporter always
+runs in its own container (pinned Python + pm4py) and talks to the LRS over the
+internal Docker network with the credentials from `.env`:
+
+```bash
+docker compose run --rm analytics [--group 1A] [--since 2026-10-01]
+# → analytics/out/events.csv and analytics/out/events.xes
+```
+
+The first run builds the image. On Linux, set `ANALYTICS_UID`/`ANALYTICS_GID`
+in `.env` to your `id -u`/`id -g` if they are not 1000 so the output files are
+yours.
+
+Basic process mining: frequency and performance directly-follows graphs from a
+log in `analytics/out/` (`events.xes` by default, `.csv` also accepted):
+
+```bash
+docker compose run --rm dfg [--input events.csv] [--activity activity_coarse] \
+  [--aggregation median] [--format svg]
+# → analytics/out/events_dfg_frequency.png and events_dfg_performance.png
+```
+
+`concept:name` is the fine-grained activity (verb + object, e.g. a specific
+challenge) and `activity_coarse` the coarse one (verb + type). Games played with
+`?debug` are skipped unless `--include-debug` is given.

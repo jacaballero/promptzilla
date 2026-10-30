@@ -15,6 +15,28 @@
 		flush_interval -1
 	}
 
+	# xAPI: only statement POSTs reach the LRS; credentials are added here so they
+	# never reach the browser. Any other /xapi/* request (e.g. GET) is refused.
+	@xapi {
+		method POST
+		path /xapi/statements
+	}
+	handle @xapi {
+		request_body {
+			max_size 256KB
+		}
+		reverse_proxy {$LRS_UPSTREAM:lrs:8080} {
+			header_up Authorization "Basic {$LRS_BASIC_AUTH}"
+			header_up X-Experience-API-Version "1.0.3"
+			# The game posts as text/plain to avoid CORS preflights.
+			header_up Content-Type "application/json"
+			header_up -Origin
+		}
+	}
+	handle /xapi/* {
+		respond 404
+	}
+
 	# Revalidate code on every load (cheap 304s) so deploys show up without a hard reload.
 	@code path / *.html *.js *.css
 	header @code Cache-Control "no-cache"

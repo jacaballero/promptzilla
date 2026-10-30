@@ -26,6 +26,10 @@
       <li>Cada reto solo se puede responder una vez. Si fallas, verás la solución.</li>
       <li id="start-report-rule">Al final recibirás un informe sobre cómo has usado la IA.</li>
     </ul>
+    <div id="start-xapi-rule" class="start-privacy" role="note">
+      <strong>Registro anónimo de la partida</strong>
+      <p>Se registra de forma anónima tu interacción con el juego con fines de investigación docente. No se guarda el texto de tus prompts ni ningún dato que permita identificarte o relacionar el registro contigo.</p>
+    </div>
     <div class="start-progress"><div id="start-bar"></div></div>
     <p id="start-status">Cargando…</p>
     <button id="start-btn" class="btn-primary" disabled>Cargando…</button>
@@ -62,6 +66,7 @@
 <script src="config.js"></script><!-- optional local override; 404 if absent is fine -->
 <script src="boot.js"></script>
 <!-- Modules -->
+<script src="xapi.js"></script>
 <script src="llm.js"></script>
 <script src="eval.js"></script>
 <script src="challenge.js"></script>

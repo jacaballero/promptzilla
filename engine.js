@@ -14,7 +14,7 @@
 
 "use strict";
 
-/* global SCENES, DIALOGUES, Challenge, PromptEval */
+/* global SCENES, DIALOGUES, Challenge, PromptEval, XAPI */
 
 // ─── Sprite frame registry ─────────────────────────────────────────────────
 const SPRITES = {
@@ -145,6 +145,7 @@ function showStartScreen() {
 }
 
 function startGame() {
+  XAPI.startGame();
   changeScene("entrance", "default");
   startPlayerAnim();
 }
@@ -166,6 +167,7 @@ function changeScene(sceneId, entryKey) {
   closeBubble();
   hideHoverName();
   GAME.sceneId = sceneId;
+  XAPI.sceneAccessed(scene, entryKey);
 
   // Background
   const bg = document.createElement("div");
@@ -514,6 +516,7 @@ function onFloorClick(e) {
 
 function onHotspotClick(h) {
   if (curDialogue) return;
+  XAPI.hotspotClicked(GAME.sceneId, h);
   const w = (SCENES[GAME.sceneId] && SCENES[GAME.sceneId].walk) || DEFAULT_WALK;
   const ap = h.approach || { x: h.approachX ?? 50, y: w.yMax - 4 };
   closeBubble();
@@ -528,6 +531,7 @@ function onHotspotClick(h) {
 
 function onCharacterClick(c) {
   if (curDialogue) return;
+  XAPI.characterClicked(c);
   const off = 10;
   // Optional per-character `approach` point (e.g. for very wide sprites).
   const ax = c.approach ? c.approach.x : (c.x < GAME.player.x ? c.x + off : c.x - off);
@@ -576,6 +580,7 @@ function openDialogue(dialogueId) {
   closeBubble();
   hideHoverName();
   curDialogue = { id: dialogueId, data: d };
+  XAPI.dialogueOpened(dialogueId);
   goToNode(d.start);
 }
 
@@ -588,6 +593,7 @@ function goToNode(nodeId) {
 
   if (node.setFlag) GAME.flags[node.setFlag] = true;
 
+  curDialogue.nodeId = nodeId;
   renderDialogue(node);
 }
 
@@ -602,7 +608,7 @@ function renderDialogue(node) {
 
   const opts = document.createElement("div");
   opts.className = "dlg-options";
-  (node.options || []).forEach(opt => {
+  (node.options || []).forEach((opt, i) => {
     if (opt.requires && !GAME.flags[opt.requires]) return;
     if (opt.hideIfFlag && GAME.flags[opt.hideIfFlag]) return;
     // An answered challenge (right or wrong) can never be repeated.
@@ -610,13 +616,14 @@ function renderDialogue(node) {
     const btn = document.createElement("button");
     btn.className = "dlg-option";
     btn.innerHTML = opt.text;
-    btn.addEventListener("click", () => chooseOption(opt));
+    btn.addEventListener("click", () => chooseOption(opt, i));
     opts.appendChild(btn);
   });
   dialogueEl.appendChild(opts);
 }
 
-function chooseOption(opt) {
+function chooseOption(opt, index) {
+  if (curDialogue) XAPI.dialogueOptionSelected(curDialogue.id, curDialogue.nodeId, index, opt.text);
   if (opt.setFlag) GAME.flags[opt.setFlag] = true;
 
   if (opt.action) { handleAction(opt.action); return; }
@@ -667,6 +674,7 @@ function resumeDialogue(nodeId) {
 }
 
 function closeDialogue() {
+  if (curDialogue) XAPI.dialogueClosed(curDialogue.id);
   curDialogue = null;
   dialogueEl.style.display = "none";
   dialogueEl.innerHTML = "";
@@ -709,6 +717,7 @@ function showEnd() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  XAPI.endGame({ correct, total, grade: letter, spent, remaining });
 
   if (PromptEval.enabled()) {
     const reportEl = overlay.querySelector("#win-report");
@@ -720,9 +729,13 @@ function showEnd() {
       if (!overlay.isConnected) return;
       restartBtn.style.display = "";
       if (!report) { reportEl.style.display = "none"; return; }
+      report.attempts.forEach(XAPI.promptEvaluated);
       reportEl.innerHTML = PromptEval.buildReportHTML(report);
       downloadBtn.style.display = "";
-      downloadBtn.addEventListener("click", () => PromptEval.downloadReport(report));
+      downloadBtn.addEventListener("click", () => {
+        XAPI.reportDownloaded();
+        PromptEval.downloadReport(report);
+      });
     });
   }
 
@@ -733,6 +746,7 @@ function showEnd() {
     GAME.totalSpent = 0;
     GAME.flags = {};
     refreshHUD();
+    XAPI.startGame();
     changeScene("entrance", "default");
   });
 }

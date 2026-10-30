@@ -16,6 +16,10 @@ window.APP_CONFIG = {
     model: "google/gemma-4-12B-it",
     maxTokens: 1024,
     maxConcurrent: 8
+  },
+  // Anonymous interaction log sent to the LRS; set to false to log nothing.
+  xapi: {
+    enabled: true
   }
 };
 
@@ -28,5 +32,8 @@ window.APP_CONFIG = {
 //     think: null,
 //     maxTokens: 1024,
 //     maxConcurrent: 8
+//   },
+//   xapi: {
+//     enabled: true
 //   }
 // };

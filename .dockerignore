@@ -15,7 +15,10 @@ LICENSE
 
 # Tooling and build helpers.
 assets/*.py
+analytics
 **/__pycache__
+.env
+.env.*
 
 # OS / editor cruft.
 .DS_Store

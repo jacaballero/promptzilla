@@ -9,6 +9,9 @@ services:
       # Point it at your Ollama (e.g. host:11434) or vLLM (e.g. host:8002),
       # matching the provider set in config.js. Set LLM_UPSTREAM in .env.
       - LLM_UPSTREAM=${LLM_UPSTREAM:-127.0.0.1:11434}
+      # xAPI: Caddy forwards POST /xapi/statements to the LRS with these credentials.
+      - LRS_UPSTREAM=lrs:8080
+      - LRS_BASIC_AUTH=${LRS_BASIC_AUTH:-}
     volumes:
       # Production config (relative endpoint "/api/generate"). Copy
       # config.prod.example.js to config.js and edit model/endpoint.
@@ -18,3 +21,78 @@ services:
     # instead:
     #   extra_hosts: ["host.docker.internal:host-gateway"]
     # and set LLM_UPSTREAM=host.docker.internal:11434
+
+  # Learning Record Store (xAPI). Admin UI at http://<host>:<LRS_PORT>/admin
+  lrs:
+    image: yetanalytics/lrsql:v0.9.11
+    command: /lrsql/bin/run_postgres.sh
+    ports:
+      - "${LRS_PORT:-8081}:8080"
+    environment:
+      - LRSQL_ADMIN_USER_DEFAULT=${LRS_ADMIN_USER:?set LRS_ADMIN_USER in .env}
+      - LRSQL_ADMIN_PASS_DEFAULT=${LRS_ADMIN_PASS:?set LRS_ADMIN_PASS in .env}
+      - LRSQL_API_KEY_DEFAULT=${LRS_API_KEY:?set LRS_API_KEY in .env}
+      - LRSQL_API_SECRET_DEFAULT=${LRS_API_SECRET:?set LRS_API_SECRET in .env}
+      - LRSQL_DB_HOST=db
+      - LRSQL_DB_PORT=5432
+      - LRSQL_DB_NAME=lrsql
+      - LRSQL_DB_USER=lrsql
+      - LRSQL_DB_PASSWORD=${LRS_DB_PASSWORD:?set LRS_DB_PASSWORD in .env}
+      - LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT=30000
+      # Browser origins allowed to use the admin UI (the LRS rejects others with 403).
+      - LRSQL_ALLOWED_ORIGINS=${LRS_ALLOWED_ORIGINS:-http://localhost:${LRS_PORT:-8081},http://127.0.0.1:${LRS_PORT:-8081}}
+      # Lets the exporter page through statements in big chunks.
+      - LRSQL_STMT_GET_MAX=1000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    ports:
+      # Bound to the host's loopback by default; set LRS_DB_BIND=0.0.0.0 to expose it.
+      - "${LRS_DB_BIND:-127.0.0.1}:${LRS_DB_PORT:-5433}:5432"
+    environment:
+      - POSTGRES_DB=lrsql
+      - POSTGRES_USER=lrsql
+      - POSTGRES_PASSWORD=${LRS_DB_PASSWORD:?set LRS_DB_PASSWORD in .env}
+    volumes:
+      - lrs-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lrsql -d lrsql"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # One-shot exporter (xAPI -> CSV/XES). Not started by `up`; run with:
+  #   docker compose run --rm analytics [--group 1A] [--since 2026-10-01]
+  analytics:
+    build: ./analytics
+    image: promptzilla-analytics
+    profiles: ["analytics"]
+    user: "${ANALYTICS_UID:-1000}:${ANALYTICS_GID:-1000}"
+    environment:
+      - LRS_ENDPOINT=http://lrs:8080/xapi
+      - LRS_API_KEY=${LRS_API_KEY:?set LRS_API_KEY in .env}
+      - LRS_API_SECRET=${LRS_API_SECRET:?set LRS_API_SECRET in .env}
+    volumes:
+      - ./analytics/out:/out
+    depends_on:
+      - lrs
+
+  # Frequency + performance DFGs from a log in analytics/out/; run with:
+  #   docker compose run --rm dfg [--input events.csv] [--activity activity_coarse]
+  dfg:
+    build: ./analytics
+    image: promptzilla-analytics
+    profiles: ["analytics"]
+    user: "${ANALYTICS_UID:-1000}:${ANALYTICS_GID:-1000}"
+    entrypoint: ["python", "/app/dfg.py"]
+    working_dir: /out
+    volumes:
+      - ./analytics/out:/out
+
+volumes:
+  lrs-pgdata:
