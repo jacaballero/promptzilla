@@ -9,7 +9,7 @@
 
 "use strict";
 
-/* global window, document, location, crypto, fetch */
+/* global window, document, location, crypto, fetch, I18N */
 
 const XAPI = (function () {
 
@@ -33,6 +33,13 @@ const XAPI = (function () {
     received: VOCAB + "/verbs/received",
     blocked: VOCAB + "/verbs/blocked",
     evaluated: VOCAB + "/verbs/evaluated"
+  };
+
+  const VERB_ES = {
+    initialized: "inició", completed: "completó", abandoned: "abandonó", accessed: "accedió",
+    interacted: "interactuó", selected: "seleccionó", exited: "salió", answered: "respondió",
+    asked: "preguntó", failed: "falló", downloaded: "descargó", received: "recibió",
+    blocked: "bloqueado", evaluated: "evaluado"
   };
 
   const TYPES = {
@@ -88,28 +95,40 @@ const XAPI = (function () {
   }
 
   function plain(html) {
-    return String(html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return String(html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+      .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
   }
 
-  function lang(s) { return { "es-ES": String(s) }; }
+  // xAPI language map with one entry per game language: { "es-ES": …, "en-US": … }.
+  function langMap(fn) {
+    const out = {};
+    I18N.supported.forEach(code => {
+      const v = fn(code);
+      if (v) out[I18N.localeOf(code)] = String(v);
+    });
+    return out;
+  }
+  const names = value => langMap(code => plain(I18N.pickFor(code, value)));
+  const tNames = (key, title) => langMap(code => I18N.tFor(code, key, { title: plain(I18N.pickFor(code, title)) }));
 
   // ─── Activities ───────────────────────────────────────────────────────
-  function activity(path, type, name, extra) {
+  function activity(path, type, nameMap, extra) {
     const definition = Object.assign({ type }, extra || {});
-    if (name) definition.name = lang(name);
+    if (nameMap && Object.keys(nameMap).length) definition.name = nameMap;
     return { objectType: "Activity", id: base() + path, definition };
   }
 
-  function gameActivity() { return activity("/game", TYPES.game, "Promptzilla"); }
+  function gameActivity() { return activity("/game", TYPES.game, names("Promptzilla")); }
 
   function challengeActivity(ch) {
     const correct = Array.isArray(ch.correct) ? ch.correct : [ch.correct];
-    return activity(`/challenge/${ch.id}`, TYPES.question, ch.title, {
+    return activity(`/challenge/${ch.id}`, TYPES.question, names(ch.title), {
       interactionType: "choice",
       correctResponsesPattern: [correct.map(String).join("[,]")],
       choices: (ch.options || []).map((o, i) => ({
         id: String(i),
-        description: lang(`${o.label}) ${plain(o.text)}`)
+        description: langMap(code => `${o.label}) ${plain(I18N.pickFor(code, o.text))}`)
       }))
     });
   }
@@ -139,9 +158,9 @@ const XAPI = (function () {
     const statement = {
       id: uuid(),
       actor: { objectType: "Agent", account: { homePage: base(), name: actorId } },
-      verb: { id: VERBS[verb], display: { "en-US": verb } },
+      verb: { id: VERBS[verb], display: { "en-US": verb, "es-ES": VERB_ES[verb] || verb } },
       object,
-      context: { registration, platform: "Promptzilla", language: "es-ES", contextActivities, extensions },
+      context: { registration, platform: "Promptzilla", language: I18N.locale(), contextActivities, extensions },
       timestamp: new Date().toISOString()
     };
     if (o.result) statement.result = o.result;
@@ -214,33 +233,55 @@ const XAPI = (function () {
   }
 
   // ─── World ────────────────────────────────────────────────────────────
+  const sceneActivity = scene => activity(`/scene/${scene.id}`, TYPES.area, names(scene.name));
+  const hotspotActivity = (sceneId, h) =>
+    activity(`/scene/${sceneId}/hotspot/${h.id}`, TYPES.hotspot, names(h.label || h.id));
+  const characterActivity = c => activity(`/character/${c.id}`, TYPES.npc, names(c.name || c.id));
+
   function sceneAccessed(scene, entryKey) {
-    track("accessed", activity(`/scene/${scene.id}`, TYPES.area, scene.name),
+    track("accessed", sceneActivity(scene),
       { result: { extensions: resultExt({ entry: entryKey || "default" }) } });
   }
 
   function hotspotClicked(sceneId, h) {
-    track("interacted", activity(`/scene/${sceneId}/hotspot/${h.id}`, TYPES.hotspot, h.label || h.id),
+    track("interacted", hotspotActivity(sceneId, h),
       { result: { extensions: resultExt({ kind: h.kind }) } });
   }
 
   function characterClicked(c) {
-    track("interacted", activity(`/character/${c.id}`, TYPES.npc, c.name || c.id));
+    track("interacted", characterActivity(c));
   }
 
   // ─── Dialogues ────────────────────────────────────────────────────────
+  function dialogueName(dialogueId) {
+    const d = window.DIALOGUES && window.DIALOGUES[dialogueId];
+    return (d && d.name) || dialogueId;
+  }
+
+  function dialogueActivity(dialogueId) {
+    return activity(`/dialogue/${dialogueId}`, TYPES.dialog, names(dialogueName(dialogueId)));
+  }
+
   function dialogueOpened(dialogueId) {
-    track("accessed", activity(`/dialogue/${dialogueId}`, TYPES.dialog, dialogueId));
+    track("accessed", dialogueActivity(dialogueId));
   }
 
   function dialogueOptionSelected(dialogueId, nodeId, index, text) {
-    track("selected", activity(`/dialogue/${dialogueId}/node/${nodeId}`, TYPES.dialog, `${dialogueId}/${nodeId}`), {
-      result: { response: String(index), extensions: resultExt({ "option-text": plain(text) }) }
+    track("selected", nodeActivity(dialogueId, nodeId), {
+      result: { response: String(index), extensions: resultExt({ "option-text": names(text) }) }
     });
   }
 
+  function nodeActivity(dialogueId, nodeId) {
+    const node = window.DIALOGUES && window.DIALOGUES[dialogueId] && window.DIALOGUES[dialogueId].nodes[nodeId];
+    const nodeLabel = (node && node.label) || (window.DIALOGUE_NODE_LABELS || {})[nodeId] || nodeId;
+    const nodeNames = langMap(code =>
+      `${plain(I18N.pickFor(code, dialogueName(dialogueId)))} · ${plain(I18N.pickFor(code, nodeLabel))}`);
+    return activity(`/dialogue/${dialogueId}/node/${nodeId}`, TYPES.dialog, nodeNames);
+  }
+
   function dialogueClosed(dialogueId) {
-    track("exited", activity(`/dialogue/${dialogueId}`, TYPES.dialog, dialogueId));
+    track("exited", dialogueActivity(dialogueId));
   }
 
   // ─── Challenges ───────────────────────────────────────────────────────
@@ -275,12 +316,15 @@ const XAPI = (function () {
   function challengeClosed() { currentChallenge = null; }
 
   function tutorActivity(ch) {
-    return activity(`/challenge/${ch.id}/tutor`, TYPES.tutor, `Tutor IA · ${ch.title}`);
+    return activity(`/challenge/${ch.id}/tutor`, TYPES.tutor, tNames("xapi.tutor", ch.title));
   }
+  const modeActivity = ch => activity(`/challenge/${ch.id}/llm-mode`, TYPES.menu, tNames("xapi.mode", ch.title));
+  const evaluationActivity = (id, title) =>
+    activity(`/challenge/${id}/prompt-evaluation`, TYPES.evaluation, tNames("xapi.evaluation", title));
+  const reportActivity = () => activity("/report", TYPES.report, langMap(code => I18N.tFor(code, "xapi.report")));
 
   function modeSelected(ch, mode) {
-    track("selected", activity(`/challenge/${ch.id}/llm-mode`, TYPES.menu, `Modo IA · ${ch.title}`),
-      { result: { response: mode } });
+    track("selected", modeActivity(ch), { result: { response: mode } });
   }
 
   function tutorAsked(ch, mode, words, estimatedCost) {
@@ -312,8 +356,7 @@ const XAPI = (function () {
   // ─── Prompt evaluation + report ───────────────────────────────────────
   function promptEvaluated(attempt) {
     const items = attempt.items || [];
-    track("evaluated", activity(`/challenge/${attempt.challengeId}/prompt-evaluation`, TYPES.evaluation,
-      `Evaluación de prompts · ${attempt.title}`), {
+    track("evaluated", evaluationActivity(attempt.challengeId, attempt.titleText), {
       parent: null,
       result: {
         extensions: resultExt({
@@ -329,8 +372,27 @@ const XAPI = (function () {
   }
 
   function reportDownloaded() {
-    track("downloaded", activity("/report", TYPES.report, "Informe de prompts"), { parent: null });
+    track("downloaded", reportActivity(), { parent: null });
     flush(false);
+  }
+
+  // Every activity the game can log with its names in all languages, so the
+  // exporter can relabel statements logged by older versions of the game.
+  function catalog() {
+    const list = [gameActivity(), reportActivity()];
+    Object.values(window.SCENES || {}).forEach(scene => {
+      list.push(sceneActivity(scene));
+      (scene.hotspots || []).forEach(h => list.push(hotspotActivity(scene.id, h)));
+      (scene.characters || []).forEach(c => list.push(characterActivity(c)));
+    });
+    Object.entries(window.DIALOGUES || {}).forEach(([id, d]) => {
+      list.push(dialogueActivity(id));
+      Object.keys(d.nodes || {}).forEach(nodeId => list.push(nodeActivity(id, nodeId)));
+    });
+    (window.CHALLENGES || (window.CONTENT && window.CONTENT.challenges) || []).forEach(ch => {
+      list.push(challengeActivity(ch), tutorActivity(ch), modeActivity(ch), evaluationActivity(ch.id, ch.title));
+    });
+    return list;
   }
 
   // ─── Page lifecycle ───────────────────────────────────────────────────
@@ -354,7 +416,7 @@ const XAPI = (function () {
     dialogueOpened, dialogueOptionSelected, dialogueClosed,
     challengeOpened, challengeExited, challengeAnswered, challengeClosed,
     modeSelected, tutorAsked, tutorReceived, tutorFailed, tutorBlocked,
-    promptEvaluated, reportDownloaded
+    promptEvaluated, reportDownloaded, catalog
   };
 })();
 

@@ -1,5 +1,5 @@
 // Promptzilla — Adventure engine
-// Code language: English | UI strings in Spanish
+// Code language: English | UI strings: i18n/ (via I18N)
 //
 // Responsibilities:
 //   • Global game state (tokens, flags, inventory, player position)
@@ -14,7 +14,7 @@
 
 "use strict";
 
-/* global SCENES, DIALOGUES, Challenge, PromptEval, XAPI */
+/* global SCENES, DIALOGUES, Challenge, PromptEval, XAPI, I18N */
 
 // ─── Sprite frame registry ─────────────────────────────────────────────────
 const SPRITES = {
@@ -124,7 +124,7 @@ function showStartScreen() {
     if (ready) return;
     ready = true;
     btn.disabled = false;
-    btn.textContent = "Empezar →";
+    btn.textContent = I18N.t("start.button");
     status.textContent = label;
     btn.focus({ preventScroll: true });
   };
@@ -132,10 +132,10 @@ function showStartScreen() {
   preloadAssets((done, total) => {
     const pct = Math.round((done / total) * 100);
     bar.style.width = pct + "%";
-    if (!ready) status.textContent = `Cargando… ${pct}%`;
-  }).then(() => enable("¡Todo listo!"));
+    if (!ready) status.textContent = I18N.t("start.loadingPct", { pct });
+  }).then(() => enable(I18N.t("start.ready")));
   // Never trap the player behind a stalled request.
-  setTimeout(() => enable("Aún se está cargando, pero ya puedes empezar."), 30000);
+  setTimeout(() => enable(I18N.t("start.slow")), 30000);
 
   btn.addEventListener("click", () => {
     if (!ready) return;
@@ -152,7 +152,7 @@ function startGame() {
 
 // ─── HUD ──────────────────────────────────────────────────────────────────────
 function refreshHUD() {
-  if (hudTokensEl) hudTokensEl.textContent = `${GAME.tokens} / ${INITIAL_TOKENS} tokens`;
+  if (hudTokensEl) hudTokensEl.textContent = I18N.t("hud.tokens", { tokens: GAME.tokens, max: INITIAL_TOKENS });
 }
 window.refreshHUD = refreshHUD;
 
@@ -199,7 +199,7 @@ function changeScene(sceneId, entryKey) {
     stageEl.appendChild(fg);
   }
 
-  if (captionEl) captionEl.textContent = scene.caption || scene.name;
+  if (captionEl) captionEl.textContent = I18N.pick(scene.caption) || I18N.pick(scene.name);
   if (DEBUG) drawWalkDebug(scene);
 }
 
@@ -234,7 +234,7 @@ function drawWalkDebug(scene) {
     layer.appendChild(el);
   };
   poly.forEach(([x, y], i) => label(x, y, `${i + 1} (${x}, ${y})`, "wd-vertex"));
-  scene.hotspots.forEach(h => h.approach && label(h.approach.x, h.approach.y, `▼ ${h.label}`, "wd-approach"));
+  scene.hotspots.forEach(h => h.approach && label(h.approach.x, h.approach.y, `▼ ${I18N.pick(h.label)}`, "wd-approach"));
   (scene.characters || []).forEach(c => c.approach && label(c.approach.x, c.approach.y, `▼ ${c.id}`, "wd-approach"));
 
   const cursor = document.createElement("span");
@@ -524,7 +524,7 @@ function onHotspotClick(h) {
     if (h.kind === "exit") {
       changeScene(h.target, h.targetEntry || "default");
     } else if (h.kind === "look") {
-      say(h.look || "No hay nada interesante aquí.");
+      say(I18N.pick(h.look) || I18N.t("world.nothing"));
     }
   });
 }
@@ -557,7 +557,7 @@ function closeBubble() {
 // Places the name pill above the hotspot, or below it when there's no room up top.
 function showHoverName(h) {
   if (!hoverNameEl || !h.label) return;
-  hoverNameEl.textContent = h.label;
+  hoverNameEl.textContent = I18N.pick(h.label);
   const cx = Math.max(10, Math.min(90, h.x + h.w / 2));
   hoverNameEl.style.left = cx + "%";
   if (h.y > 6) {
@@ -603,7 +603,7 @@ function renderDialogue(node) {
 
   const npc = document.createElement("div");
   npc.className = "dlg-npc";
-  npc.innerHTML = (typeof node.npc === "function" ? node.npc(GAME) : node.npc) || "";
+  npc.innerHTML = I18N.pick(node.npc, GAME) || "";
   dialogueEl.appendChild(npc);
 
   const opts = document.createElement("div");
@@ -615,7 +615,7 @@ function renderDialogue(node) {
     if (opt.action && opt.action.type === "challenge" && isChallengeAnswered(opt.action.challengeId)) return;
     const btn = document.createElement("button");
     btn.className = "dlg-option";
-    btn.innerHTML = opt.text;
+    btn.innerHTML = I18N.pick(opt.text);
     btn.addEventListener("click", () => chooseOption(opt, i));
     opts.appendChild(btn);
   });
@@ -690,15 +690,10 @@ function showEnd() {
   const total = ids.length;
   const correct = ids.filter(id => GAME.flags[answeredFlag(id)] && !GAME.flags[failedFlag(id)]).length;
   const letter = "ABCDE"[Math.min(total - correct, 4)];
-  const summary = correct === 0 ? `No acertaste ninguno de los ${total} retos.`
-                                : `Acertaste ${correct} de los ${total} retos.`;
+  const summary = I18N.t("end.summary", { correct, total });
 
   const usedRatio = spent / INITIAL_TOKENS;
-  const flavor = usedRatio > 0.9
-    ? "Has cebado a Promptzilla: se ha zampado casi todos tus tokens y ahora ronda la facultad más grande que nunca."
-    : usedRatio < 0.25
-    ? "Has puesto a Promptzilla a dieta: apenas ha probado tus tokens y se ha quedado con hambre."
-    : "Promptzilla sigue en la ciudad, pero hoy no lo has cebado. La facultad respira.";
+  const flavor = I18N.t(usedRatio > 0.9 ? "end.flavor.high" : usedRatio < 0.25 ? "end.flavor.low" : "end.flavor.mid");
 
   const overlay = document.createElement("div");
   overlay.id = "win-screen";
@@ -706,14 +701,14 @@ function showEnd() {
     <div class="win-card">
       <h1 class="win-letter grade-${letter.toLowerCase()}">${letter}</h1>
       <p class="win-grade">${summary}</p>
-      <p>Tokens gastados: <strong>${spent}</strong> · Restantes: <strong>${remaining}</strong></p>
+      <p>${I18N.t("end.tokens", { spent, remaining })}</p>
       <p class="win-flavor">${flavor}</p>
       <div id="win-report" class="win-report" style="display:none">
-        <p class="rep-loading">Analizando tus prompts…</p>
+        <p class="rep-loading">${I18N.t("end.analyzing")}</p>
       </div>
       <div class="win-actions">
-        <button id="win-download" class="btn-secondary" style="display:none">Descargar informe (HTML)</button>
-        <button id="win-restart" class="btn-primary">Volver a empezar</button>
+        <button id="win-download" class="btn-secondary" style="display:none">${I18N.t("end.download")}</button>
+        <button id="win-restart" class="btn-primary">${I18N.t("end.restart")}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);

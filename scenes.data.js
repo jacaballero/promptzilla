@@ -18,8 +18,11 @@ window.SCENES = {
   // ─── Entrance + corridor (map-like hub) ──────────────────────────────────
   entrance: {
     id: "entrance",
-    name: "Entrada de la Facultad",
-    caption: "Facultad de Informática. Año 2035. Huele a café malo y a modelos sobrecargados.",
+    name: { es: "Entrada de la Facultad", en: "Faculty hall" },
+    caption: {
+      es: "Facultad de Informática. Año 2035. Huele a café malo y a modelos sobrecargados.",
+      en: "School of Computer Science. Year 2035. It smells of bad coffee and overloaded models."
+    },
     bg: {
       image: "assets/scenes/scene_corridor.png",
       foregroundImage: "assets/scenes/scene_corridor_fg.png",
@@ -59,7 +62,7 @@ window.SCENES = {
     hotspots: [
       {
         id: "door-classroom",
-        label: "Aula 0.01",
+        label: { es: "Aula 0.01", en: "Room 0.01" },
         kind: "exit",
         target: "classroom",
         x: 11, y: 7, w: 11, h: 45,
@@ -67,7 +70,7 @@ window.SCENES = {
       },
       {
         id: "door-classroom2",
-        label: "Aula 0.02",
+        label: { es: "Aula 0.02", en: "Room 0.02" },
         kind: "exit",
         target: "classroom2",
         x: 33.4, y: 7, w: 5, h: 28,
@@ -75,7 +78,7 @@ window.SCENES = {
       },
       {
         id: "door-study",
-        label: "Sala de estudio",
+        label: { es: "Sala de estudio", en: "Study room" },
         kind: "exit",
         target: "studyroom",
         x: 81, y: 9, w: 15, h: 50,
@@ -83,7 +86,7 @@ window.SCENES = {
       },
       {
         id: "stairs",
-        label: "Escaleras ↑",
+        label: { es: "Escaleras ↑", en: "Stairs ↑" },
         kind: "exit",
         target: "rooftop",
         targetEntry: "fromCorridor",
@@ -92,15 +95,18 @@ window.SCENES = {
       },
       {
         id: "poster",
-        label: "Cartel de 'SE BUSCA'",
+        label: { es: "Cartel de 'SE BUSCA'", en: "'WANTED' poster" },
         kind: "look",
         x: 71, y: 7, w: 12, h: 33,
         approach: { x: 66, y: 56 },
-        look: "Un cartel descolorido: «SE BUSCA: Promptzilla. Peligrosidad: media. Recompensa: 3 créditos ECTS». Alguien ha añadido a boli: 'lo vi ayer en la cafetería, pidió un cortado'."
+        look: {
+          es: "Un cartel descolorido: «SE BUSCA: Promptzilla. Peligrosidad: media. Recompensa: 3 créditos ECTS». Alguien ha añadido a boli: 'lo vi ayer en la cafetería, pidió un cortado'.",
+          en: "A faded poster: «WANTED: Promptzilla. Danger level: medium. Reward: 3 ECTS credits». Someone has added in pen: 'saw it yesterday in the cafeteria, it ordered a macchiato'."
+        }
       },
       {
         id: "street-door",
-        label: "Salir a la plaza",
+        label: { es: "Salir a la plaza", en: "Go out to the square" },
         kind: "exit",
         target: "plaza",
         targetEntry: "fromCorridor",
@@ -113,8 +119,11 @@ window.SCENES = {
   // ─── Classroom (professor) ───────────────────────────────────────────────
   classroom: {
     id: "classroom",
-    name: "Aula 0.01",
-    caption: "El aula del examen final. La pizarra holográfica parpadea con nervios.",
+    name: { es: "Aula 0.01", en: "Room 0.01" },
+    caption: {
+      es: "El aula del examen final. La pizarra holográfica parpadea con nervios.",
+      en: "The final exam room. The holographic blackboard flickers nervously."
+    },
     bg: { image: "assets/scenes/scene_class_room.png", theme: "classroom" },
     walk: { yMin: 66, yMax: 95, near: 1.0, far: 0.72 },
     obstacles: [
@@ -126,12 +135,12 @@ window.SCENES = {
       fromEntrance: { x: 78, y: 88 }
     },
     characters: [
-      { id: "teacher", sprite: "teacher", x: 38, y: 84, dialogue: "teacher" , hit: { w: 33, h: 99 } }
+      { id: "teacher", name: { es: "Profesor", en: "Teacher" }, sprite: "teacher", x: 38, y: 84, dialogue: "teacher" , hit: { w: 33, h: 99 } }
     ],
     hotspots: [
       {
         id: "door-out",
-        label: "Salir al pasillo",
+        label: { es: "Salir al pasillo", en: "Go to the corridor" },
         kind: "exit",
         target: "entrance",
         targetEntry: "fromClassroom",
@@ -140,19 +149,25 @@ window.SCENES = {
       },
       {
         id: "blackboard",
-        label: "Pizarra holográfica",
+        label: { es: "Pizarra holográfica", en: "Holographic blackboard" },
         kind: "look",
         x: 0, y: 4, w: 32, h: 44,
         approach: { x: 28, y: 84 },
-        look: "En la pizarra pone: «EXAMEN FINAL — Prohibido preguntar al LLM… salvo que sepas preguntar bien». El profesor la mira con orgullo sospechoso."
+        look: {
+          es: "En la pizarra pone: «EXAMEN FINAL — Prohibido preguntar al LLM… salvo que sepas preguntar bien». El profesor la mira con orgullo sospechoso.",
+          en: "The blackboard says: «FINAL EXAM — Asking the LLM is forbidden… unless you know how to ask well». The teacher looks at it with suspicious pride."
+        }
       }
     ]
   },
   // ─── Classroom 2 (bright / daytime) ──────────────────────────────
   classroom2: {
     id: "classroom2",
-    name: "Aula 0.02",
-    caption: "Otra aula, esta con luz de día. Aquí el examen es a primera hora y sin excusas.",
+    name: { es: "Aula 0.02", en: "Room 0.02" },
+    caption: {
+      es: "Otra aula, esta con luz de día. Aquí el examen es a primera hora y sin excusas.",
+      en: "Another classroom, this one in daylight. Here the exam is first thing in the morning, no excuses."
+    },
     bg: { image: "assets/scenes/scene_class_room_2.png", theme: "classroom" },
     walk: { yMin: 69.5, yMax: 95, near: 1.0, far: 0.79 },
     entryPoints: {
@@ -162,13 +177,13 @@ window.SCENES = {
     characters: [
       // Idle student you can talk to; he offers a practice challenge.
       // hit = tuned clickable box (percent of the sprite, anchored at the feet).
-      { id: "student-glasses", sprite: "student-glasses", x: 32, y: 84, scale: 1.13, animMs: 700,
+      { id: "student-glasses", name: { es: "Estudiante con gafas", en: "Student with glasses" }, sprite: "student-glasses", x: 32, y: 84, scale: 1.13, animMs: 700,
         animSeq: [0, 1, 2, 1], dialogue: "studentGlasses", hit: { w: 32, h: 96 } }
     ],
     hotspots: [
       {
         id: "door-out",
-        label: "Salir al pasillo",
+        label: { es: "Salir al pasillo", en: "Go to the corridor" },
         kind: "exit",
         target: "entrance",
         targetEntry: "fromClassroom2",
@@ -177,19 +192,25 @@ window.SCENES = {
       },
       {
         id: "blackboard",
-        label: "Pizarra holográfica",
+        label: { es: "Pizarra holográfica", en: "Holographic blackboard" },
         kind: "look",
         x: 64, y: 7, w: 36, h: 42,
         approach: { x: 82, y: 84 },
-        look: "La pizarra proyecta: «Aula B — Aquí sí puedes usar la IA… si demuestras que no la necesitas». Debajo, en letra pequeña: 'y trae café para todos'."
+        look: {
+          es: "La pizarra proyecta: «Aula B — Aquí sí puedes usar la IA… si demuestras que no la necesitas». Debajo, en letra pequeña: 'y trae café para todos'.",
+          en: "The blackboard shows: «Room B — Here you CAN use the AI… if you prove you don't need it». Below, in small print: 'and bring coffee for everyone'."
+        }
       }
     ]
   },
   // ─── Study room (two students) ───────────────────────────────────────────
   studyroom: {
     id: "studyroom",
-    name: "Sala de estudio",
-    caption: "Sala de estudio. Dos compañeros fingen repasar mientras discuten de etiquetas HTML.",
+    name: { es: "Sala de estudio", en: "Study room" },
+    caption: {
+      es: "Sala de estudio. Dos compañeros fingen repasar mientras discuten de etiquetas HTML.",
+      en: "Study room. Two classmates pretend to revise while arguing about HTML tags."
+    },
     bg: { image: "assets/scenes/scene_study_room.png", theme: "study" },
     // yMin keeps the feet off the chairs; depthFarY keeps the perspective anchored at 62.
     walk: { yMin: 67, yMax: 95, near: 1.0, far: 0.72, depthFarY: 62 },
@@ -199,13 +220,13 @@ window.SCENES = {
     },
     characters: [
       // `scale` offsets the steeper perspective (far 0.72) so the girl keeps her size.
-      { id: "student-girl", sprite: "student-girl", x: 38.5, y: 88, scale: 1.03, dialogue: "studentGirl" , hit: { w: 32, h: 96 } },
-      { id: "student-boy",  sprite: "student-boy",  x: 66, y: 93, dialogue: "studentBoy", hit: { w: 33, h: 98 } }
+      { id: "student-girl", name: { es: "Estudiante de la coleta", en: "Student with a ponytail" }, sprite: "student-girl", x: 38.5, y: 88, scale: 1.03, dialogue: "studentGirl" , hit: { w: 32, h: 96 } },
+      { id: "student-boy", name: { es: "Estudiante de los cascos", en: "Student with headphones" }, sprite: "student-boy",  x: 66, y: 93, dialogue: "studentBoy", hit: { w: 33, h: 98 } }
     ],
     hotspots: [
       {
         id: "door-out",
-        label: "Salir al pasillo",
+        label: { es: "Salir al pasillo", en: "Go to the corridor" },
         kind: "exit",
         target: "entrance",
         targetEntry: "fromStudy",
@@ -214,11 +235,14 @@ window.SCENES = {
       },
       {
         id: "vending",
-        label: "Máquina de café",
+        label: { es: "Máquina de café", en: "Coffee machine" },
         kind: "look",
         x: 80, y: 9, w: 20, h: 58,
         approach: { x: 79, y: 70 },
-        look: "Una máquina de café con una pegatina: «Powered by IA». Cobra en tokens. Por supuesto que cobra en tokens."
+        look: {
+          es: "Una máquina de café con una pegatina: «Powered by IA». Cobra en tokens. Por supuesto que cobra en tokens.",
+          en: "A coffee machine with a sticker: «Powered by AI». It charges in tokens. Of course it charges in tokens."
+        }
       }
     ]
   },
@@ -226,8 +250,11 @@ window.SCENES = {
   // ─── Rooftop (Promptzilla) ───────────────────────────────────────────────
   rooftop: {
     id: "rooftop",
-    name: "Azotea de la Facultad",
-    caption: "La azotea. Al atardecer, sobre la ciudad… y ahí está él, digiriendo tokens.",
+    name: { es: "Azotea de la Facultad", en: "Faculty rooftop" },
+    caption: {
+      es: "La azotea. Al atardecer, sobre la ciudad… y ahí está él, digiriendo tokens.",
+      en: "The rooftop. At sunset, above the city… and there it is, digesting tokens."
+    },
     bg: { image: "assets/scenes/scene_rooftop.png", theme: "hallway" },
     walk: { yMin: 64, yMax: 90, xMin: 18, xMax: 95, near: 1.0, far: 0.60 },
     entryPoints: {
@@ -237,7 +264,7 @@ window.SCENES = {
     characters: [
       // Frames: 0 = eyes open, 1 = half-closed, 2 = closed. Never holds a frame
       // longer than ~1 s; one full blink per ~8 s cycle.
-      { id: "promptzilla", sprite: "promptzilla", x: 66, y: 97, scale: 1.65, dialogue: "promptzilla", hit: { w: 66, h: 96 },
+      { id: "promptzilla", name: "Promptzilla", sprite: "promptzilla", x: 66, y: 97, scale: 1.65, dialogue: "promptzilla", hit: { w: 66, h: 96 },
         noShadow: true, animMs: 500,   // noShadow: no floor ellipse nor drop-shadow
         approach: { x: 43, y: 90 },
         animSeq: [0, 0, 1, 0, 0, 1, 0, 0, 1, 2, 1, 0, 0, 1, 0, 1] }
@@ -245,7 +272,7 @@ window.SCENES = {
     hotspots: [
       {
         id: "door-down",
-        label: "Bajar por las escaleras",
+        label: { es: "Bajar por las escaleras", en: "Go down the stairs" },
         kind: "exit",
         target: "entrance",
         targetEntry: "fromRooftop",
@@ -254,11 +281,14 @@ window.SCENES = {
       },
       {
         id: "skyline",
-        label: "La ciudad",
+        label: { es: "La ciudad", en: "The city" },
         kind: "look",
         x: 74, y: 6, w: 28, h: 38,
         approach: { x: 95, y: 84 },
-        look: "La ciudad de 2035 parpadea con anuncios holográficos. En uno pone: «IA responsable: pregunta menos, piensa más». Nadie le hace caso."
+        look: {
+          es: "La ciudad de 2035 parpadea con anuncios holográficos. En uno pone: «IA responsable: pregunta menos, piensa más». Nadie le hace caso.",
+          en: "The city of 2035 flickers with holographic ads. One of them reads: «Responsible AI: ask less, think more». Nobody pays attention."
+        }
       }
     ]
   },
@@ -266,8 +296,11 @@ window.SCENES = {
   // ─── Plaza (exterior entrance) ───────────────────────────────────────
   plaza: {
     id: "plaza",
-    name: "Entrada a la Facultad",
-    caption: "La plaza de entrada. Drones sobrevolando, la ciudad zumbando de fondo.",
+    name: { es: "Entrada a la Facultad", en: "Faculty entrance" },
+    caption: {
+      es: "La plaza de entrada. Drones sobrevolando, la ciudad zumbando de fondo.",
+      en: "The entrance square. Drones flying overhead, the city buzzing in the background."
+    },
     bg: { image: "assets/scenes/scene_entrance.png", theme: "hallway" },
     // Wide shot: small character; flat plaza floor as an octagon.
     walk: {
@@ -298,15 +331,18 @@ window.SCENES = {
     hotspots: [
       {
         id: "students-talk",
-        label: "Estudiantes",
+        label: { es: "Estudiantes", en: "Students" },
         kind: "look",
         x: 16, y: 42, w: 26, h: 44,
         approach: { x: 46, y: 84 },
-        look: "Un corrillo de estudiantes cuchichea sobre la IA. Pillas retazos: «...no le sueltes un testamento al modelo, que cada token se paga»; «sé concreto: pídele exacto lo que necesitas y listo»; «yo gasté media cuenta preguntándole cosas con rodeos… aprende de mis errores»."
+        look: {
+          es: "Un corrillo de estudiantes cuchichea sobre la IA. Pillas retazos: «...no le sueltes un testamento al modelo, que cada token se paga»; «sé concreto: pídele exacto lo que necesitas y listo»; «yo gasté media cuenta preguntándole cosas con rodeos… aprende de mis errores».",
+          en: "A huddle of students whispers about AI. You catch snippets: «...don't dump an essay on the model, every token costs»; «be specific: ask exactly for what you need and that's it»; «I burnt half my balance asking it things in a roundabout way… learn from my mistakes»."
+        }
       },
       {
         id: "door-in",
-        label: "Entrar",
+        label: { es: "Entrar", en: "Go in" },
         kind: "exit",
         target: "entrance",
         targetEntry: "default",
@@ -315,19 +351,25 @@ window.SCENES = {
       },
       {
         id: "billboard",
-        label: "Panel holográfico",
+        label: { es: "Panel holográfico", en: "Holographic billboard" },
         kind: "look",
         x: 84, y: 36, w: 8, h: 25,
         approach: { x: 78, y: 74 },
-        look: "Un panel publicitario: «Matrícula 2035: ahora con tutía de IA incluida». En letra pequeña: 'la IA no se hace responsable de tu expediente'."
+        look: {
+          es: "Un panel publicitario: «Matrícula 2035: ahora con tutía de IA incluida». En letra pequeña: 'la IA no se hace responsable de tu expediente'.",
+          en: "An advertising billboard: «Enrolment 2035: now with AI tutoring included». In small print: 'the AI takes no responsibility for your transcript'."
+        }
       },
       {
         id: "scooter",
-        label: "Patinete",
+        label: { es: "Patinete", en: "Scooter" },
         kind: "look",
         x: 8, y: 48, w: 14, h: 16,
         approach: { x: 24, y: 70 },
-        look: "Un patinete eléctrico aparcado. Tiene una pegatina: «Desbloquea con un prompt». Nadie recuerda cuál era."
+        look: {
+          es: "Un patinete eléctrico aparcado. Tiene una pegatina: «Desbloquea con un prompt». Nadie recuerda cuál era.",
+          en: "A parked e-scooter. It has a sticker: «Unlock with a prompt». Nobody remembers which one."
+        }
       }
     ]
   }

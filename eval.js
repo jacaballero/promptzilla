@@ -11,7 +11,7 @@
 
 "use strict";
 
-/* global LLM, window, document, DOMParser, Blob, URL */
+/* global LLM, I18N, window, document, DOMParser, Blob, URL */
 
 const PromptEval = (function () {
 
@@ -68,8 +68,8 @@ const PromptEval = (function () {
   }
 
   function challengeTexts(ch) {
-    const question = htmlToText(ch.question);
-    const options = (ch.options || []).map(o => htmlToText(o.text));
+    const question = htmlToText(I18N.pick(ch.question));
+    const options = (ch.options || []).map(o => htmlToText(I18N.pick(o.text)));
     const labelled = (ch.options || []).map((o, i) => `${o.label} ${options[i]}`);
     return [
       question,
@@ -114,7 +114,8 @@ const PromptEval = (function () {
     const attempt = {
       challengeId: ch.id,
       number: ch.number,
-      title: ch.title,
+      title: I18N.pick(ch.title),
+      titleText: ch.title,
       correct: correct === null ? null : !!correct,
       items
     };
@@ -146,17 +147,17 @@ const PromptEval = (function () {
   };
 
   function attemptUserMessage(attempt, ch) {
-    const options = (ch.options || []).map(o => `${o.label}) ${htmlToText(o.text)}`).join("\n");
+    const options = (ch.options || []).map(o => `${o.label}) ${htmlToText(I18N.pick(o.text))}`).join("\n");
     const prompts = attempt.items.map((it, i) =>
       `[${i + 1}] copied_statement=${it.copied}\n<<<${it.prompt}>>>`).join("\n\n");
-    return `Quiz statement:\n${htmlToText(ch.question)}\n\nOptions:\n${options}\n\n` +
+    return `Quiz statement:\n${htmlToText(I18N.pick(ch.question))}\n\nOptions:\n${options}\n\n` +
       `Student prompts (evaluate each one; reply with the same id):\n${prompts}`;
   }
 
   function evaluateAttempt(attempt, ch) {
     const myGen = gen;
     const p = LLM.complete({
-      system: cfg().systemPerChallenge || "",
+      system: LLM.localize(cfg().systemPerChallenge),
       user: attemptUserMessage(attempt, ch),
       schema: ATTEMPT_SCHEMA,
       schemaName: "prompt_evaluations",
@@ -226,7 +227,7 @@ const PromptEval = (function () {
     }
     try {
       const res = await LLM.complete({
-        system: cfg().systemSummary || "",
+        system: LLM.localize(cfg().systemSummary),
         user: summaryUserMessage(),
         schema: SUMMARY_SCHEMA,
         schemaName: "prompting_summary",
@@ -265,53 +266,56 @@ const PromptEval = (function () {
   }
 
   function summaryHTML(report) {
+    const t = I18N.t;
     if (report.summaryStatus === "done") {
       const s = report.summary;
       return `
-        <h3>Fortalezas</h3>${listHTML(s.strengths)}
-        <h3>A mejorar</h3>${listHTML(s.improvements)}
-        <h3>Conclusión</h3><p>${esc(s.conclusion)}</p>`;
+        <h3>${t("report.strengths")}</h3>${listHTML(s.strengths)}
+        <h3>${t("report.improvements")}</h3>${listHTML(s.improvements)}
+        <h3>${t("report.conclusion")}</h3><p>${esc(s.conclusion)}</p>`;
     }
-    if (report.summaryStatus === "failed") return `<p class="rep-warn">Resumen no disponible.</p>`;
-    return `<p>No consultaste al LLM en ninguna prueba.</p>`;
+    if (report.summaryStatus === "failed") return `<p class="rep-warn">${t("report.summaryUnavailable")}</p>`;
+    return `<p>${t("report.noConsults")}</p>`;
   }
 
   function itemHTML(it, full) {
-    const repeated = it.uses.length > 1 ? ` <span class="rep-tag">repetido ×${it.uses.length}</span>` : "";
-    const copied = it.copied ? ` <span class="rep-tag rep-copy">copiado del enunciado</span>` : "";
+    const t = I18N.t;
+    const repeated = it.uses.length > 1 ? ` <span class="rep-tag">${t("report.repeated", { n: it.uses.length })}</span>` : "";
+    const copied = it.copied ? ` <span class="rep-tag rep-copy">${t("report.copied")}</span>` : "";
     const uses = it.uses.map(u => `
       <div class="rep-use">
-        <div class="rep-meta">${u.mode === "socratic" ? "Socrático" : "Directo"} · ${esc(u.cost)} tokens</div>
+        <div class="rep-meta">${t(u.mode === "socratic" ? "report.modeSocratic" : "report.modeDirect")} · ${esc(u.cost)} tokens</div>
         <div class="rep-answer">${esc(u.answer)}</div>
       </div>`).join("");
     const fb = it.status === "done" ? `
       <dl class="rep-fb">
-        <dt>Claridad</dt><dd>${esc(it.feedback.clarity)}</dd>
-        <dt>Contexto</dt><dd>${esc(it.feedback.context)}</dd>
-        <dt>Concisión</dt><dd>${esc(it.feedback.conciseness)}</dd>
-        <dt>Valoración</dt><dd>${esc(it.feedback.overall)}</dd>
-        <dt>Sugerencia</dt><dd>${esc(it.feedback.suggestion)}</dd>
-      </dl>` : `<p class="rep-warn">No evaluado.</p>`;
+        <dt>${t("report.clarity")}</dt><dd>${esc(it.feedback.clarity)}</dd>
+        <dt>${t("report.context")}</dt><dd>${esc(it.feedback.context)}</dd>
+        <dt>${t("report.conciseness")}</dt><dd>${esc(it.feedback.conciseness)}</dd>
+        <dt>${t("report.overall")}</dt><dd>${esc(it.feedback.overall)}</dd>
+        <dt>${t("report.suggestion")}</dt><dd>${esc(it.feedback.suggestion)}</dd>
+      </dl>` : `<p class="rep-warn">${t("report.notEvaluated")}</p>`;
     return `
       <details class="rep-item">
         <summary><span class="rep-prompt">${esc(it.prompt)}</span>${repeated}${copied}</summary>
         ${fb}
-        ${full ? `<h4>Respuesta del tutor</h4>${uses}` : ""}
+        ${full ? `<h4>${t("report.tutorAnswer")}</h4>${uses}` : ""}
       </details>`;
   }
 
   function attemptHTML(a, full) {
+    const t = I18N.t;
     const result = a.correct === null
-      ? `<span class="rep-left">↩ Abandonada</span>`
+      ? `<span class="rep-left">${t("report.abandoned")}</span>`
       : a.correct
-        ? `<span class="rep-ok">✓ Acertada</span>`
-        : `<span class="rep-ko">✗ Fallada</span>`;
+        ? `<span class="rep-ok">${t("report.passed")}</span>`
+        : `<span class="rep-ko">${t("report.failed")}</span>`;
     const body = a.items.length
       ? a.items.map(it => itemHTML(it, full)).join("")
-      : `<p class="rep-none">${a.correct ? "Resuelto sin consultar" : "Respondido sin consultar"}</p>`;
+      : `<p class="rep-none">${t(a.correct ? "report.solvedNoConsult" : "report.answeredNoConsult")}</p>`;
     return `
       <section class="rep-attempt">
-        <h3>Prueba ${esc(a.number)} — ${esc(a.title)} ${result}</h3>
+        <h3>${t("report.attempt", { number: esc(a.number), title: esc(a.title) })} ${result}</h3>
         ${body}
       </section>`;
   }
@@ -320,9 +324,9 @@ const PromptEval = (function () {
   function buildReportHTML(report, { full = false } = {}) {
     const shown = full ? report.attempts : report.attempts.filter(a => a.items.length);
     return `
-      <h2>Resumen</h2>
+      <h2>${I18N.t("report.summary")}</h2>
       <div class="rep-summary">${summaryHTML(report)}</div>
-      ${shown.length ? `<h2>Detalle por prueba</h2>${shown.map(a => attemptHTML(a, full)).join("")}` : ""}`;
+      ${shown.length ? `<h2>${I18N.t("report.detail")}</h2>${shown.map(a => attemptHTML(a, full)).join("")}` : ""}`;
   }
 
   const DOWNLOAD_CSS = `
@@ -340,20 +344,21 @@ const PromptEval = (function () {
     .rep-meta{font-size:.8rem;color:#666}.rep-answer{white-space:pre-wrap}`;
 
   function downloadReport(report) {
-    const date = new Date().toLocaleString("es-ES");
+    const date = new Date().toLocaleString(I18N.locale());
     const logo = window.PROMPTZILLA_LOGO;
+    const title = esc(I18N.t("report.title"));
     const head = logo
-      ? `<header class="rep-head"><img src="${logo}" alt="Promptzilla"><div><h1>Informe de tus prompts</h1><p>${esc(date)}</p></div></header>`
-      : `<h1>Promptzilla — Informe de tus prompts</h1><p>${esc(date)}</p>`;
+      ? `<header class="rep-head"><img src="${logo}" alt="Promptzilla"><div><h1>${title}</h1><p>${esc(date)}</p></div></header>`
+      : `<h1>Promptzilla — ${title}</h1><p>${esc(date)}</p>`;
     const html = `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>Promptzilla — Informe de prompts</title>
+<html lang="${I18N.lang}"><head><meta charset="UTF-8"><title>${esc(I18N.t("report.docTitle"))}</title>
 <style>${DOWNLOAD_CSS}</style></head>
 <body>${head}
 ${buildReportHTML(report, { full: true })}</body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = "informe-promptzilla.html";
+    a.download = I18N.t("report.filename");
     document.body.appendChild(a);
     a.click();
     a.remove();

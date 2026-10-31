@@ -14,25 +14,23 @@
 <!-- ── Start screen (preloads every image before the game starts) ─────────── -->
 <div id="start-screen">
   <div class="start-card">
+    <div id="start-lang" class="start-lang"></div>
     <img class="start-logo" src="assets/logos/promptzilla-lime.png" alt="Promptzilla">
-    <p class="start-intro">
-      Año 2035. <strong>Promptzilla</strong>, un monstruo que engorda con cada prompt perezoso,
-      ronda la Universidad. Tu misión: superar los retos sin cebarlo.
-    </p>
+    <p class="start-intro" data-i18n="start.intro"></p>
     <ul class="start-rules">
-      <li>Haz clic en el escenario para moverte y en los personajes para hablar con ellos.</li>
-      <li>Algunos personajes te plantearán retos relacionados con la asignatura.</li>
-      <li>En cada reto puedes consultar a la IA, pero gasta <strong>tokens</strong>: el modo socrático cuesta la mitad que el directo.</li>
-      <li>Cada reto solo se puede responder una vez. Si fallas, verás la solución.</li>
-      <li id="start-report-rule">Al final recibirás un informe sobre cómo has usado la IA.</li>
+      <li data-i18n="start.rule.move"></li>
+      <li data-i18n="start.rule.challenges"></li>
+      <li data-i18n="start.rule.tokens"></li>
+      <li data-i18n="start.rule.once"></li>
+      <li id="start-report-rule" data-i18n="start.rule.report"></li>
     </ul>
     <div id="start-xapi-rule" class="start-privacy" role="note">
-      <strong>Registro anónimo de la partida</strong>
-      <p>Se registra de forma anónima tu interacción con el juego con fines de investigación docente. No se guarda el texto de tus prompts ni ningún dato que permita identificarte o relacionar el registro contigo.</p>
+      <strong data-i18n="start.privacy.title"></strong>
+      <p data-i18n="start.privacy.text"></p>
     </div>
     <div class="start-progress"><div id="start-bar"></div></div>
-    <p id="start-status">Cargando…</p>
-    <button id="start-btn" class="btn-primary" disabled>Cargando…</button>
+    <p id="start-status" data-i18n="start.loading"></p>
+    <button id="start-btn" class="btn-primary" disabled data-i18n="start.loading"></button>
   </div>
 </div>
 
@@ -62,10 +60,13 @@
 <script src="content.js"></script>
 <script src="profanity.data.js"></script>
 <script src="logo.data.js"></script>
+<script src="i18n/es.js"></script>
+<script src="i18n/en.js"></script>
 <script src="config.default.js"></script>
 <script src="config.js"></script><!-- optional local override; 404 if absent is fine -->
 <script src="boot.js"></script>
 <!-- Modules -->
+<script src="i18n.js"></script>
 <script src="xapi.js"></script>
 <script src="llm.js"></script>
 <script src="eval.js"></script>

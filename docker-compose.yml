@@ -79,6 +79,13 @@ services:
       - LRS_API_SECRET=${LRS_API_SECRET:?set LRS_API_SECRET in .env}
     volumes:
       - ./analytics/out:/out
+      # Game data, so activities are named in every language (analytics/catalog.js).
+      - ./i18n:/game/i18n:ro
+      - ./i18n.js:/game/i18n.js:ro
+      - ./xapi.js:/game/xapi.js:ro
+      - ./content.js:/game/content.js:ro
+      - ./scenes.data.js:/game/scenes.data.js:ro
+      - ./dialogues.data.js:/game/dialogues.data.js:ro
     depends_on:
       - lrs
 

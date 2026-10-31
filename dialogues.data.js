@@ -1,17 +1,20 @@
 // Promptzilla — Dialogue trees for the adventure prototype
-// Code language: English | Content language: Spanish
+// Code language: English | Content: one value per language, { es: "…", en: "…" }
 //
 // Each dialogue is a set of nodes. The engine starts at `start` and renders the
-// current node's `npc` line plus its `options`.
+// current node's `npc` line plus its `options`. `name` labels the dialogue in
+// the xAPI log.
 //
 // Node schema:
-//   npc      {string|function(GAME): string}  what the character says (a function
-//                                              lets the line depend on game state)
+//   npc      {text|function(GAME): text}  what the character says (a function
+//                                          lets the line depend on game state)
 //   route    {function(GAME): string} optional; if present, jump to the returned node id
 //   options  [{ ... }]                 player choices
+//   label    {text}                    optional; name of the node in the xAPI log
+//                                      (defaults to DIALOGUE_NODE_LABELS[node id])
 //
 // Option schema (all fields optional except `text`):
-//   text        {string}                 the choice shown to the player
+//   text        {text}                   the choice shown to the player
 //   goto        {string}                 next node id
 //   end         {boolean}                close the dialogue
 //   setFlag     {string}                 set GAME.flags[flag] = true when chosen
@@ -24,7 +27,7 @@
 // Each challenge can be answered only once. Any answer (right or wrong) sets
 // GAME.flags["answeredChallenge" + id] and the engine hides every option that
 // would reopen it; a wrong answer also sets GAME.flags["failedChallenge" + id].
-// Leaving the challenge with "✕ Salir" does not count as answering.
+// Leaving the challenge with "✕ Exit" does not count as answering.
 
 "use strict";
 
@@ -36,66 +39,113 @@
 const PRACTICE_IDS = [1, 2, 3];
 const practiceLeft = GAME => PRACTICE_IDS.filter(id => !GAME.flags["answeredChallenge" + id]).length;
 const practiceDone = GAME => practiceLeft(GAME) === 0;
-const LAST_PRACTICE_HINT = " Por cierto, con este ya has hecho los tres retos de práctica: el profe te espera en el aula 0.01 para el examen final.";
+const LAST_PRACTICE_HINT = {
+  es: " Por cierto, con este ya has hecho los tres retos de práctica: el profe te espera en el aula 0.01 para el examen final.",
+  en: " By the way, with this one you've done all three practice challenges: the teacher is waiting for you in room 0.01 for the final exam."
+};
+const withHint = line => ({ es: line.es + LAST_PRACTICE_HINT.es, en: line.en + LAST_PRACTICE_HINT.en });
 const afterPractice = (more, last) => GAME => practiceDone(GAME) ? last : more;
+
+// Names of the dialogue nodes in the xAPI log ("<dialogue> · <node>"), shared by
+// every dialogue that reuses the same node id.
+window.DIALOGUE_NODE_LABELS = {
+  root: { es: "encuentro", en: "encounter" },
+  intro: { es: "saludo", en: "greeting" },
+  spent: { es: "reto ya hecho", en: "challenge already done" },
+  gossip: { es: "rumores sobre Promptzilla", en: "Promptzilla gossip" },
+  meta: { es: "uso de la IA", en: "using AI" },
+  wonMore: { es: "reto acertado", en: "challenge passed" },
+  wonLast: { es: "reto acertado (último de práctica)", en: "challenge passed (last practice)" },
+  lostMore: { es: "reto fallado", en: "challenge failed" },
+  lostLast: { es: "reto fallado (último de práctica)", en: "challenge failed (last practice)" },
+  notReady: { es: "examen bloqueado", en: "exam locked" },
+  insist: { es: "insistir", en: "insisting" },
+  ready: { es: "examen final", en: "final exam" },
+  passed: { es: "aprobado", en: "passed" },
+  failed: { es: "suspenso", en: "failed" },
+  alreadyPassed: { es: "ya aprobado", en: "already passed" },
+  origin: { es: "origen", en: "origin" },
+  threat: { es: "desafío", en: "showdown" }
+};
 
 window.DIALOGUES = {
 
   // ─── Student girl (practice) ─────────────────────────────────────────────
   studentGirl: {
+    name: { es: "Estudiante de la coleta", en: "Student with a ponytail" },
     start: "root",
     nodes: {
       root: {
         route: GAME => GAME.flags.answeredChallenge1 ? "spent" : "intro"
       },
       intro: {
-        npc: "¡Ah, hola! ¿Tú también con el examen final? Yo llevo repasando HTML desde que Promptzilla se comió el temario de la nube.",
+        npc: {
+          es: "¡Ah, hola! ¿Tú también con el examen final? Yo llevo repasando HTML desde que Promptzilla se comió el temario de la nube.",
+          en: "Oh, hi! You're also on the final exam? I've been revising HTML ever since Promptzilla ate the syllabus from the cloud."
+        },
         options: [
-          { text: "¿Me pones un reto para practicar?", action: { type: "challenge", challengeId: 1, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "¿Qué sabes de Promptzilla?", goto: "gossip" },
-          { text: "Nada, ya sigo. (Salir)", end: true }
+          { text: { es: "¿Me pones un reto para practicar?", en: "Can you give me a practice challenge?" }, action: { type: "challenge", challengeId: 1, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "¿Qué sabes de Promptzilla?", en: "What do you know about Promptzilla?" }, goto: "gossip" },
+          { text: { es: "Nada, ya sigo. (Salir)", en: "Nothing, I'll keep going. (Leave)" }, end: true }
         ]
       },
       spent: {
         npc: GAME => GAME.flags.failedChallenge1
-          ? "Mi reto ya lo has visto, con solución incluida. Ahora toca que se te quede."
-          : "Mi reto ya lo clavaste. No te voy a poner el mismo dos veces, que te aburres.",
+          ? { es: "Mi reto ya lo has visto, con solución incluida. Ahora toca que se te quede.",
+              en: "You've already seen my challenge, solution included. Now make it stick." }
+          : { es: "Mi reto ya lo clavaste. No te voy a poner el mismo dos veces, que te aburres.",
+              en: "You nailed my challenge already. I won't give you the same one twice, you'd get bored." },
         options: [
-          { text: "¿Qué sabes de Promptzilla?", goto: "gossip" },
-          { text: "Gracias. (Salir)", end: true }
+          { text: { es: "¿Qué sabes de Promptzilla?", en: "What do you know about Promptzilla?" }, goto: "gossip" },
+          { text: { es: "Gracias. (Salir)", en: "Thanks. (Leave)" }, end: true }
         ]
       },
       gossip: {
-        npc: "¿Promptzilla? Lleva años en la ciudad. Dicen que nació de tanto pedirle a la IA que 'lo hiciera por ti'. Ahora hasta tiene cuenta verificada.",
+        npc: {
+          es: "¿Promptzilla? Lleva años en la ciudad. Dicen que nació de tanto pedirle a la IA que 'lo hiciera por ti'. Ahora hasta tiene cuenta verificada.",
+          en: "Promptzilla? It's been in town for years. They say it was born from people asking the AI to 'just do it for me'. Now it even has a verified account."
+        },
         options: [
-          { text: "Ponme un reto, va.", action: { type: "challenge", challengeId: 1, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "Volver", goto: "root" }
+          { text: { es: "Ponme un reto, va.", en: "Give me a challenge, go on." }, action: { type: "challenge", challengeId: 1, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "Volver", en: "Back" }, goto: "root" }
         ]
       },
       won: { route: afterPractice("wonMore", "wonLast") },
       wonMore: {
-        npc: "¡Toma! Se nota que has estudiado y no solo copiado.",
+        npc: {
+          es: "¡Toma! Se nota que has estudiado y no solo copiado.",
+          en: "Boom! You can tell you studied and didn't just copy."
+        },
         options: [
-          { text: "Gracias, ¡nos vemos!", end: true }
+          { text: { es: "Gracias, ¡nos vemos!", en: "Thanks, see you!" }, end: true }
         ]
       },
       wonLast: {
-        npc: "¡Toma! Se nota que has estudiado y no solo copiado." + LAST_PRACTICE_HINT,
+        npc: withHint({
+          es: "¡Toma! Se nota que has estudiado y no solo copiado.",
+          en: "Boom! You can tell you studied and didn't just copy."
+        }),
         options: [
-          { text: "¡Voy para allá!", end: true }
+          { text: { es: "¡Voy para allá!", en: "On my way!" }, end: true }
         ]
       },
       lost: { route: afterPractice("lostMore", "lostLast") },
       lostMore: {
-        npc: "Uf, casi. Ahora ya sabes cuál era: apúntatelo bien, que no se perdona ni un &lt;div&gt; de más.",
+        npc: {
+          es: "Uf, casi. Ahora ya sabes cuál era: apúntatelo bien, que no se perdona ni un &lt;div&gt; de más.",
+          en: "Ouch, close. Now you know which one it was: write it down, not even one extra &lt;div&gt; gets forgiven."
+        },
         options: [
-          { text: "Me lo apunto. (Salir)", end: true }
+          { text: { es: "Me lo apunto. (Salir)", en: "Noted. (Leave)" }, end: true }
         ]
       },
       lostLast: {
-        npc: "Uf, casi. Ahora ya sabes cuál era: apúntatelo bien." + LAST_PRACTICE_HINT,
+        npc: withHint({
+          es: "Uf, casi. Ahora ya sabes cuál era: apúntatelo bien.",
+          en: "Ouch, close. Now you know which one it was: write it down."
+        }),
         options: [
-          { text: "Me lo apunto. (Salir)", end: true }
+          { text: { es: "Me lo apunto. (Salir)", en: "Noted. (Leave)" }, end: true }
         ]
       }
     }
@@ -103,59 +153,74 @@ window.DIALOGUES = {
 
   // ─── Student boy (practice) ──────────────────────────────────────────────
   studentBoy: {
+    name: { es: "Estudiante de los cascos", en: "Student with headphones" },
     start: "root",
     nodes: {
       root: {
         route: GAME => GAME.flags.answeredChallenge2 ? "spent" : "intro"
       },
       intro: {
-        npc: "Ey. *se baja los cascos* Estoy repasando con lo-fi y buenas intenciones. ¿Quieres que te tome uno de práctica?",
+        npc: {
+          es: "Ey. *se baja los cascos* Estoy repasando con lo-fi y buenas intenciones. ¿Quieres que te tome uno de práctica?",
+          en: "Hey. *pulls headphones down* I'm revising with lo-fi and good intentions. Want me to quiz you with a practice one?"
+        },
         options: [
-          { text: "Dale, un reto.", action: { type: "challenge", challengeId: 2, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "¿Tú le preguntas a la IA?", goto: "meta" },
-          { text: "Ahora vuelvo. (Salir)", end: true }
+          { text: { es: "Dale, un reto.", en: "Sure, a challenge." }, action: { type: "challenge", challengeId: 2, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "¿Tú le preguntas a la IA?", en: "Do you ask the AI?" }, goto: "meta" },
+          { text: { es: "Ahora vuelvo. (Salir)", en: "Be right back. (Leave)" }, end: true }
         ]
       },
       spent: {
         npc: GAME => GAME.flags.failedChallenge2
-          ? "*se vuelve a poner un casco* Mi pregunta ya la quemaste, bro. Pero ya sabes la respuesta, que es lo que cuenta."
-          : "*se vuelve a poner un casco* Mi pregunta ya la sacaste, bro. Nada más que rascar por aquí.",
+          ? { es: "*se vuelve a poner un casco* Mi pregunta ya la quemaste, bro. Pero ya sabes la respuesta, que es lo que cuenta.",
+              en: "*puts one earcup back on* You already burnt my question, bro. But you know the answer now, that's what counts." }
+          : { es: "*se vuelve a poner un casco* Mi pregunta ya la sacaste, bro. Nada más que rascar por aquí.",
+              en: "*puts one earcup back on* You already got my question, bro. Nothing more to scrape here." },
         options: [
-          { text: "¿Tú le preguntas a la IA?", goto: "meta" },
-          { text: "Hasta luego. (Salir)", end: true }
+          { text: { es: "¿Tú le preguntas a la IA?", en: "Do you ask the AI?" }, goto: "meta" },
+          { text: { es: "Hasta luego. (Salir)", en: "See you. (Leave)" }, end: true }
         ]
       },
       meta: {
-        npc: "Claro, pero en modo socrático. Si le pides la respuesta masticada, Promptzilla engorda y a mí me da vergüenza ajena.",
+        npc: {
+          es: "Claro, pero en modo socrático. Si le pides la respuesta masticada, Promptzilla engorda y a mí me da vergüenza ajena.",
+          en: "Sure, but in Socratic mode. If you ask for the answer spoon-fed, Promptzilla gets fatter and I cringe for you."
+        },
         options: [
-          { text: "Ponme el reto.", action: { type: "challenge", challengeId: 2, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "Volver", goto: "root" }
+          { text: { es: "Ponme el reto.", en: "Give me the challenge." }, action: { type: "challenge", challengeId: 2, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "Volver", en: "Back" }, goto: "root" }
         ]
       },
       won: { route: afterPractice("wonMore", "wonLast") },
       wonMore: {
-        npc: "¡Crack! Eso ya es nivel examen.",
+        npc: { es: "¡Crack! Eso ya es nivel examen.", en: "Legend! That's exam level already." },
         options: [
-          { text: "¡Gracias!", end: true }
+          { text: { es: "¡Gracias!", en: "Thanks!" }, end: true }
         ]
       },
       wonLast: {
-        npc: "¡Crack! Eso ya es nivel examen." + LAST_PRACTICE_HINT,
+        npc: withHint({ es: "¡Crack! Eso ya es nivel examen.", en: "Legend! That's exam level already." }),
         options: [
-          { text: "¡Voy!", end: true }
+          { text: { es: "¡Voy!", en: "On it!" }, end: true }
         ]
       },
       lost: { route: afterPractice("lostMore", "lostLast") },
       lostMore: {
-        npc: "Nah, tranqui. Ni yo lo saqué a la primera. Quédate con la respuesta, que aquí no hay segunda vuelta.",
+        npc: {
+          es: "Nah, tranqui. Ni yo lo saqué a la primera. Quédate con la respuesta, que aquí no hay segunda vuelta.",
+          en: "Nah, chill. I didn't get it first time either. Keep the answer in mind, there's no second round here."
+        },
         options: [
-          { text: "Anotado. (Salir)", end: true }
+          { text: { es: "Anotado. (Salir)", en: "Got it. (Leave)" }, end: true }
         ]
       },
       lostLast: {
-        npc: "Nah, tranqui. Ni yo lo saqué a la primera. Quédate con la respuesta." + LAST_PRACTICE_HINT,
+        npc: withHint({
+          es: "Nah, tranqui. Ni yo lo saqué a la primera. Quédate con la respuesta.",
+          en: "Nah, chill. I didn't get it first time either. Keep the answer in mind."
+        }),
         options: [
-          { text: "Anotado. (Salir)", end: true }
+          { text: { es: "Anotado. (Salir)", en: "Got it. (Leave)" }, end: true }
         ]
       }
     }
@@ -163,59 +228,80 @@ window.DIALOGUES = {
 
   // ─── Student with glasses (practice, classroom 0.02) ─────────────────────
   studentGlasses: {
+    name: { es: "Estudiante con gafas", en: "Student with glasses" },
     start: "root",
     nodes: {
       root: {
         route: GAME => GAME.flags.answeredChallenge3 ? "spent" : "intro"
       },
       intro: {
-        npc: "(Levanta la vista de la tablet) Buenas. Estoy ordenando mis apuntes por etiquetas semánticas, como debe ser. ¿Te lanzo un reto de práctica?",
+        npc: {
+          es: "(Levanta la vista de la tablet) Buenas. Estoy ordenando mis apuntes por etiquetas semánticas, como debe ser. ¿Te lanzo un reto de práctica?",
+          en: "(Looks up from the tablet) Hi. I'm sorting my notes by semantic tags, as one should. Shall I throw you a practice challenge?"
+        },
         options: [
-          { text: "Venga, un reto.", action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "¿Apuntes en tablet? ¿No tiras de IA?", goto: "meta" },
-          { text: "Ahora vuelvo. (Salir)", end: true }
+          { text: { es: "Venga, un reto.", en: "Go on, a challenge." }, action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "¿Apuntes en tablet? ¿No tiras de IA?", en: "Notes on a tablet? You don't just use AI?" }, goto: "meta" },
+          { text: { es: "Ahora vuelvo. (Salir)", en: "Be right back. (Leave)" }, end: true }
         ]
       },
       spent: {
         npc: GAME => GAME.flags.failedChallenge3
-          ? "(Sin levantar la vista) Mi reto ya lo hiciste y viste la solución. Repetirlo sería hacer trampa, y aquí no hacemos eso."
-          : "(Sin levantar la vista) Mi reto ya lo resolviste, y bien. Repetirlo no te enseñaría nada nuevo.",
+          ? { es: "(Sin levantar la vista) Mi reto ya lo hiciste y viste la solución. Repetirlo sería hacer trampa, y aquí no hacemos eso.",
+              en: "(Without looking up) You already did my challenge and saw the solution. Repeating it would be cheating, and we don't do that here." }
+          : { es: "(Sin levantar la vista) Mi reto ya lo resolviste, y bien. Repetirlo no te enseñaría nada nuevo.",
+              en: "(Without looking up) You already solved my challenge, and well. Repeating it wouldn't teach you anything new." },
         options: [
-          { text: "¿Apuntes en tablet? ¿No tiras de IA?", goto: "meta" },
-          { text: "Entendido. (Salir)", end: true }
+          { text: { es: "¿Apuntes en tablet? ¿No tiras de IA?", en: "Notes on a tablet? You don't just use AI?" }, goto: "meta" },
+          { text: { es: "Entendido. (Salir)", en: "Understood. (Leave)" }, end: true }
         ]
       },
       meta: {
-        npc: "La IA la uso para entender, no para que piense por mí. Prompt concreto, respuesta útil, y Promptzilla se queda a dieta.",
+        npc: {
+          es: "La IA la uso para entender, no para que piense por mí. Prompt concreto, respuesta útil, y Promptzilla se queda a dieta.",
+          en: "I use AI to understand, not to think for me. Specific prompt, useful answer, and Promptzilla stays on a diet."
+        },
         options: [
-          { text: "Ponme el reto.", action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
-          { text: "Volver", goto: "root" }
+          { text: { es: "Ponme el reto.", en: "Give me the challenge." }, action: { type: "challenge", challengeId: 3, onWinGoto: "won", onLoseGoto: "lost" } },
+          { text: { es: "Volver", en: "Back" }, goto: "root" }
         ]
       },
       won: { route: afterPractice("wonMore", "wonLast") },
       wonMore: {
-        npc: "Impecable. Eso es tenerlo por dentro, no en el historial del chat.",
+        npc: {
+          es: "Impecable. Eso es tenerlo por dentro, no en el historial del chat.",
+          en: "Flawless. That's knowing it inside, not in your chat history."
+        },
         options: [
-          { text: "¡Gracias!", end: true }
+          { text: { es: "¡Gracias!", en: "Thanks!" }, end: true }
         ]
       },
       wonLast: {
-        npc: "Impecable. Eso es tenerlo por dentro, no en el historial del chat." + LAST_PRACTICE_HINT,
+        npc: withHint({
+          es: "Impecable. Eso es tenerlo por dentro, no en el historial del chat.",
+          en: "Flawless. That's knowing it inside, not in your chat history."
+        }),
         options: [
-          { text: "¡Gracias!", end: true }
+          { text: { es: "¡Gracias!", en: "Thanks!" }, end: true }
         ]
       },
       lost: { route: afterPractice("lostMore", "lostLast") },
       lostMore: {
-        npc: "Casi. Ya tienes la solución delante: entiéndela, no solo la memorices.",
+        npc: {
+          es: "Casi. Ya tienes la solución delante: entiéndela, no solo la memorices.",
+          en: "Close. You have the solution in front of you now: understand it, don't just memorise it."
+        },
         options: [
-          { text: "Lo tendré en cuenta. (Salir)", end: true }
+          { text: { es: "Lo tendré en cuenta. (Salir)", en: "I'll keep it in mind. (Leave)" }, end: true }
         ]
       },
       lostLast: {
-        npc: "Casi. Ya tienes la solución delante: entiéndela, no solo la memorices." + LAST_PRACTICE_HINT,
+        npc: withHint({
+          es: "Casi. Ya tienes la solución delante: entiéndela, no solo la memorices.",
+          en: "Close. You have the solution in front of you now: understand it, don't just memorise it."
+        }),
         options: [
-          { text: "Lo tendré en cuenta. (Salir)", end: true }
+          { text: { es: "Lo tendré en cuenta. (Salir)", en: "I'll keep it in mind. (Leave)" }, end: true }
         ]
       }
     }
@@ -223,6 +309,7 @@ window.DIALOGUES = {
 
   // ─── Teacher (final exam) ────────────────────────────────────────────────
   teacher: {
+    name: { es: "Profesor", en: "Teacher" },
     start: "root",
     nodes: {
       root: {
@@ -234,43 +321,62 @@ window.DIALOGUES = {
         npc: GAME => {
           const n = practiceLeft(GAME);
           const left = n === 1 ? "te falta 1 reto" : `te faltan ${n} retos`;
-          return `¿El examen final? Con esa cara de haber dormido tres horas, no. Todavía ${left} de práctica. Vuelve cuando sepas distinguir un &lt;section&gt; de un &lt;div&gt;.`;
+          const leftEn = n === 1 ? "1 practice challenge" : `${n} practice challenges`;
+          return {
+            es: `¿El examen final? Con esa cara de haber dormido tres horas, no. Todavía ${left} de práctica. Vuelve cuando sepas distinguir un &lt;section&gt; de un &lt;div&gt;.`,
+            en: `The final exam? With that I-slept-three-hours face, no. You still have ${leftEn} to go. Come back when you can tell a &lt;section&gt; from a &lt;div&gt;.`
+          };
         },
         options: [
-          { text: "Está bien, iré a practicar.", end: true },
-          { text: "¿Y no me lo aprueba por insistencia?", goto: "insist" }
+          { text: { es: "Está bien, iré a practicar.", en: "All right, I'll go and practise." }, end: true },
+          { text: { es: "¿Y no me lo aprueba por insistencia?", en: "Can't you pass me for persistence?" }, goto: "insist" }
         ]
       },
       insist: {
-        npc: "Joven, esto es 2035, no una reunión de trabajo. Aquí se demuestra lo que se sabe. A practicar.",
+        npc: {
+          es: "Joven, esto es 2035, no una reunión de trabajo. Aquí se demuestra lo que se sabe. A practicar.",
+          en: "Young one, this is 2035, not a business meeting. Here you prove what you know. Go practise."
+        },
         options: [
-          { text: "Vale, vale…", end: true }
+          { text: { es: "Vale, vale…", en: "OK, OK…" }, end: true }
         ]
       },
       ready: {
-        npc: "Vaya, veo que has hecho todos los retos de práctica. Bien. Última pregunta del examen final, y solo hay una oportunidad. Y recuerda: puedes consultar al LLM, pero cada token que malgastes… ya sabes quién engorda.",
+        npc: {
+          es: "Vaya, veo que has hecho todos los retos de práctica. Bien. Última pregunta del examen final, y solo hay una oportunidad. Y recuerda: puedes consultar al LLM, pero cada token que malgastes… ya sabes quién engorda.",
+          en: "Well, I see you've done all the practice challenges. Good. Last question of the final exam, and there's only one chance. And remember: you can ask the LLM, but every token you waste… you know who gets fatter."
+        },
         options: [
-          { text: "Estoy listo. Examíneme.", action: { type: "challenge", challengeId: 5, onWinGoto: "passed", onLoseGoto: "failed" } },
-          { text: "Deme un segundo. (Salir)", end: true }
+          { text: { es: "Estoy listo. Examíneme.", en: "I'm ready. Test me." }, action: { type: "challenge", challengeId: 5, onWinGoto: "passed", onLoseGoto: "failed" } },
+          { text: { es: "Deme un segundo. (Salir)", en: "Give me a second. (Leave)" }, end: true }
         ]
       },
       passed: {
-        npc: "¡Aprobado! Y sin cebar al monstruo. Hay esperanza para esta facultad después de todo.",
+        npc: {
+          es: "¡Aprobado! Y sin cebar al monstruo. Hay esperanza para esta facultad después de todo.",
+          en: "Passed! And without feeding the monster. There's hope for this faculty after all."
+        },
         setFlag: "passedExam",
         options: [
-          { text: "¡Gracias, profe!", action: { type: "win" } }
+          { text: { es: "¡Gracias, profe!", en: "Thanks, professor!" }, action: { type: "win" } }
         ]
       },
       failed: {
-        npc: "Lo siento, pero es un suspenso. Y ahora que has visto la respuesta, no tendría sentido repetirlo. Revisa cómo has usado la IA y vuelve el próximo curso.",
+        npc: {
+          es: "Lo siento, pero es un suspenso. Y ahora que has visto la respuesta, no tendría sentido repetirlo. Revisa cómo has usado la IA y vuelve el próximo curso.",
+          en: "I'm sorry, but it's a fail. And now that you've seen the answer, there's no point repeating it. Review how you used the AI and come back next year."
+        },
         options: [
-          { text: "Vaya… (Ver resultado)", action: { type: "lose" } }
+          { text: { es: "Vaya… (Ver resultado)", en: "Oh well… (See result)" }, action: { type: "lose" } }
         ]
       },
       alreadyPassed: {
-        npc: "Ya has aprobado. Ve a celebrarlo… pero paga el café en efectivo, no en tokens.",
+        npc: {
+          es: "Ya has aprobado. Ve a celebrarlo… pero paga el café en efectivo, no en tokens.",
+          en: "You've already passed. Go and celebrate… but pay for the coffee in cash, not in tokens."
+        },
         options: [
-          { text: "Ja. Adiós, profe.", end: true }
+          { text: { es: "Ja. Adiós, profe.", en: "Ha. Bye, professor." }, end: true }
         ]
       }
     }
@@ -278,26 +384,36 @@ window.DIALOGUES = {
 
   // ─── Promptzilla (rooftop) ───────────────────────────────────────────────
   promptzilla: {
+    name: "Promptzilla",
     start: "root",
     nodes: {
       root: {
-        npc: "GRRR… *eructa una nube de tokens* Vaya, un humano. ¿Vienes a cebarme con prompts kilométricos o a hacerte el responsable?",
+        npc: {
+          es: "GRRR… *eructa una nube de tokens* Vaya, un humano. ¿Vienes a cebarme con prompts kilométricos o a hacerte el responsable?",
+          en: "GRRR… *burps a cloud of tokens* Well, a human. Have you come to feed me miles-long prompts or to play the responsible one?"
+        },
         options: [
-          { text: "¿Cómo has llegado hasta aquí arriba?", goto: "origin" },
-          { text: "Vengo a que dejes en paz la facultad.", goto: "threat" },
-          { text: "Mejor me voy. (Salir)", end: true }
+          { text: { es: "¿Cómo has llegado hasta aquí arriba?", en: "How did you get all the way up here?" }, goto: "origin" },
+          { text: { es: "Vengo a que dejes en paz la facultad.", en: "I've come to make you leave the faculty alone." }, goto: "threat" },
+          { text: { es: "Mejor me voy. (Salir)", en: "I'd better go. (Leave)" }, end: true }
         ]
       },
       origin: {
-        npc: "Nací de mil «hazme el trabajo entero». Cada atajo sin pensar me engorda. Soy, digamos, vuestra deuda técnica… con patas.",
+        npc: {
+          es: "Nací de mil «hazme el trabajo entero». Cada atajo sin pensar me engorda. Soy, digamos, vuestra deuda técnica… con patas.",
+          en: "I was born from a thousand «do the whole assignment for me». Every thoughtless shortcut fattens me up. I'm, let's say, your technical debt… with legs."
+        },
         options: [
-          { text: "Qué inquietante.", goto: "root" }
+          { text: { es: "Qué inquietante.", en: "How unsettling." }, goto: "root" }
         ]
       },
       threat: {
-        npc: "¿Tú y cuántos créditos ECTS? Aprueba el examen final sin malgastar tokens y a lo mejor adelgazo. A lo mejor.",
+        npc: {
+          es: "¿Tú y cuántos créditos ECTS? Aprueba el examen final sin malgastar tokens y a lo mejor adelgazo. A lo mejor.",
+          en: "You and how many ECTS credits? Pass the final exam without wasting tokens and maybe I'll slim down. Maybe."
+        },
         options: [
-          { text: "Reto aceptado.", end: true }
+          { text: { es: "Reto aceptado.", en: "Challenge accepted." }, end: true }
         ]
       }
     }

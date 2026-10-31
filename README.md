@@ -89,6 +89,29 @@ window.APP_CONFIG = {
 };
 ```
 
+## Languages
+
+The game is available in Spanish and English. The language is chosen in this
+order: `?lang=es|en` in the URL, the last choice made with the ES/EN buttons on
+the start screen (saved in the browser), the browser languages, and Spanish as
+the fallback.
+
+- UI strings live in `i18n/es.js` and `i18n/en.js` (one key per text).
+- Content (`content.js`, `dialogues.data.js`, `scenes.data.js`) uses
+  `{ es: "…", en: "…" }` for every translatable field; plain strings are shared
+  by all languages.
+- LLM prompts in the config may contain `{language}`, replaced by the game
+  language ("Spanish"/"English"), or be `{ es: "…", en: "…" }`. Keep this in
+  mind if your `config.js` overrides `system`, `modeInstructions`,
+  `brevitySuffix` or the evaluation prompts.
+- xAPI statements always carry names in both languages and the game language in
+  `context.language`. The exporter writes the activity labels in both languages
+  for every game, so DFGs can be drawn in either (`dfg --lang`); `dfg
+  --game-lang` keeps only games played in one language.
+
+To add a language: create `i18n/<code>.js`, load it in `index.html`, and add the
+`<code>` field to the content files.
+
 ## Deploying with Docker
 
 The game is fully static, but browsers can't call an external LLM directly
@@ -204,7 +227,7 @@ runs in its own container (pinned Python + pm4py) and talks to the LRS over the
 internal Docker network with the credentials from `.env`:
 
 ```bash
-docker compose run --rm analytics [--group 1A] [--since 2026-10-01]
+docker compose run --rm analytics [--group 1A] [--since 2026-10-01] [--lang en]
 # → analytics/out/events.csv and analytics/out/events.xes
 ```
 
@@ -216,11 +239,12 @@ Basic process mining: frequency and performance directly-follows graphs from a
 log in `analytics/out/` (`events.xes` by default, `.csv` also accepted):
 
 ```bash
-docker compose run --rm dfg [--input events.csv] [--activity activity_coarse] \
-  [--aggregation median] [--format svg]
-# → analytics/out/events_dfg_frequency.png and events_dfg_performance.png
+docker compose run --rm dfg [--input events.csv] [--activity coarse] [--lang en] \
+  [--game-lang es] [--aggregation median] [--format svg]
+# → analytics/out/events_<activity>_<lang>_dfg_frequency.png and …_dfg_performance.png
 ```
 
-`concept:name` is the fine-grained activity (verb + object, e.g. a specific
-challenge) and `activity_coarse` the coarse one (verb + type). Games played with
-`?debug` are skipped unless `--include-debug` is given.
+The log has `activity_fine_es/en` (verb + object, e.g. a specific challenge)
+and `activity_coarse_es/en` (verb + type) for every game, whatever language it
+was played in; `concept:name`/`activity_coarse` repeat the exporter's `--lang`.
+Games played with `?debug` are skipped unless `--include-debug` is given.

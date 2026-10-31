@@ -9,7 +9,7 @@
 
 "use strict";
 
-/* global CHALLENGES, LLM, PromptEval, XAPI, GAME, refreshHUD, window */
+/* global CHALLENGES, LLM, PromptEval, XAPI, I18N, GAME, refreshHUD, window */
 
 const Challenge = (function () {
 
@@ -55,6 +55,7 @@ const Challenge = (function () {
 
   // ─── DOM construction ──────────────────────────────────────────────────
   function build() {
+    const t = I18N.t;
     overlay = document.createElement("div");
     overlay.id = "challenge-overlay";
     overlay.innerHTML = `
@@ -63,17 +64,17 @@ const Challenge = (function () {
           <span id="c-title"></span>
           <span class="c-header-right">
             <span id="c-tokens" class="c-tokens"></span>
-            <button id="c-exit" class="c-exit-btn" title="Salir del reto y volver más tarde">✕ Salir</button>
+            <button id="c-exit" class="c-exit-btn" title="${t("challenge.exitTitle")}">${t("challenge.exit")}</button>
           </span>
         </div>
         <div id="c-question"></div>
         <div id="c-options"></div>
-        <p id="c-multi-hint">☑ Selecciona <strong>todas</strong> las respuestas correctas</p>
+        <p id="c-multi-hint">${t("challenge.multiHint")}</p>
 
         ${llmSectionHTML()}
 
         <div class="c-submit-row">
-          <button id="c-submit" class="btn-primary" disabled>Responder →</button>
+          <button id="c-submit" class="btn-primary" disabled>${t("challenge.submit")}</button>
         </div>
 
         <div id="c-feedback"></div>
@@ -89,27 +90,28 @@ const Challenge = (function () {
 
   // ─── LLM section ───────────────────────────────────────────────────────
   function llmSectionHTML() {
+    const t = I18N.t;
     return `
         <div id="c-llm">
-          <span class="c-llm-title">Consultar al LLM</span>
+          <span class="c-llm-title">${t("challenge.llmTitle")}</span>
           <div class="c-mode-row">
-            <span class="c-mode-label">Modo:</span>
-            <button class="c-mode-btn active" data-mode="direct">Directo (×2)</button>
-            <button class="c-mode-btn" data-mode="socratic">Socrático (×1)</button>
+            <span class="c-mode-label">${t("challenge.modeLabel")}</span>
+            <button class="c-mode-btn active" data-mode="direct">${t("challenge.modeDirect")}</button>
+            <button class="c-mode-btn" data-mode="socratic">${t("challenge.modeSocratic")}</button>
             <span class="c-info-wrap">
-              <button type="button" class="c-info-btn" aria-label="¿Qué es cada modo?" aria-describedby="c-mode-help">i</button>
+              <button type="button" class="c-info-btn" aria-label="${t("challenge.modeInfo")}" aria-describedby="c-mode-help">i</button>
               <span id="c-mode-help" role="tooltip">
-                <span><strong>Directo (×2):</strong> la IA te responde con la solución completa. Cuesta el doble de tokens.</span>
-                <span><strong>Socrático (×1):</strong> la IA no te da la solución, solo pistas y preguntas para que llegues tú. Cuesta la mitad.</span>
+                <span>${t("challenge.modeHelpDirect")}</span>
+                <span>${t("challenge.modeHelpSocratic")}</span>
               </span>
             </span>
           </div>
           <div class="c-llm-input">
-            <input type="text" id="c-prompt" placeholder="Escribe tu consulta y pulsa Consultar (o Enter)…" autocomplete="off">
-            <button id="c-consult" class="btn-primary">Consultar</button>
+            <input type="text" id="c-prompt" placeholder="${t("challenge.placeholder")}" autocomplete="off">
+            <button id="c-consult" class="btn-primary">${t("challenge.consult")}</button>
           </div>
           <span id="c-cost"></span>
-          <div id="c-no-tokens">⛔ Sin tokens — responde por tu cuenta</div>
+          <div id="c-no-tokens">${t("challenge.noTokens")}</div>
           <div id="c-response"></div>
         </div>`;
   }
@@ -146,8 +148,8 @@ const Challenge = (function () {
 
   // ─── Render ────────────────────────────────────────────────────────────
   function renderQuestion() {
-    $("c-title").textContent = ch.title;
-    $("c-question").innerHTML = ch.question;
+    $("c-title").textContent = I18N.pick(ch.title);
+    $("c-question").innerHTML = I18N.pick(ch.question);
     updateTokenLabel();
 
     const multi = isMultiple(ch);
@@ -158,7 +160,7 @@ const Challenge = (function () {
     ch.options.forEach((opt, i) => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
-      btn.innerHTML = `<span class="opt-label">${opt.label}</span><span class="opt-text">${opt.text}</span>`;
+      btn.innerHTML = `<span class="opt-label">${opt.label}</span><span class="opt-text">${I18N.pick(opt.text)}</span>`;
       btn.addEventListener("click", () => clickOption(i));
       box.appendChild(btn);
     });
@@ -174,7 +176,7 @@ const Challenge = (function () {
   }
 
   function updateTokenLabel() {
-    $("c-tokens").textContent = `${GAME.tokens} tokens`;
+    $("c-tokens").textContent = I18N.t("challenge.tokens", { tokens: GAME.tokens });
   }
 
   function refreshLLMAvailability() {
@@ -218,8 +220,8 @@ const Challenge = (function () {
     const cost = LLM.cost(value, mode);
     const affordable = cost <= GAME.tokens;
     el.textContent = affordable
-      ? `Coste estimado: ${cost} tokens (${words} ${words === 1 ? "palabra" : "palabras"})`
-      : `⛔ Coste estimado: ${cost} tokens — solo tienes ${GAME.tokens}`;
+      ? I18N.t("challenge.cost", { cost, words })
+      : I18N.t("challenge.costTooHigh", { cost, tokens: GAME.tokens });
     el.classList.toggle("c-cost-warn", !affordable);
     if (consultBtn) consultBtn.disabled = busy || !affordable || GAME.tokens <= 0;
   }
@@ -254,17 +256,17 @@ const Challenge = (function () {
 
   async function consult(consultMode, prompt) {
     if (busy) return;
-    if (!prompt) { showMsg("⚠️ Escribe una consulta antes de preguntar."); return; }
+    if (!prompt) { showMsg(I18N.t("challenge.warnEmpty")); return; }
     if (hasProfanity(prompt)) {
       XAPI.tutorBlocked(ch, consultMode, LLM.countWords(prompt));
-      showMsg("⚠️ Cuida el lenguaje: reformula tu consulta sin palabras ofensivas.");
+      showMsg(I18N.t("challenge.warnProfanity"));
       return;
     }
-    if (GAME.tokens <= 0) { showMsg("⚠️ Sin tokens. No puedes consultar al LLM."); return; }
+    if (GAME.tokens <= 0) { showMsg(I18N.t("challenge.warnNoTokens")); return; }
 
     const cost = estimatedCost(consultMode, prompt);
     if (cost > GAME.tokens) {
-      showMsg(`⚠️ Esta consulta cuesta ${cost} tokens y solo tienes ${GAME.tokens}. Acórtala o usa el modo socrático.`);
+      showMsg(I18N.t("challenge.warnTooExpensive", { cost, tokens: GAME.tokens }));
       return;
     }
 
@@ -293,8 +295,8 @@ const Challenge = (function () {
 
   function modeTagHTML(consultMode) {
     return consultMode === "socratic"
-      ? '<span class="tag-socratic">Socrático</span>'
-      : '<span class="tag-direct">Directo</span>';
+      ? `<span class="tag-socratic">${I18N.t("challenge.tagSocratic")}</span>`
+      : `<span class="tag-direct">${I18N.t("challenge.tagDirect")}</span>`;
   }
 
   // What to show live: strip the model's reasoning. While still inside an open
@@ -313,7 +315,7 @@ const Challenge = (function () {
     const resp = $("c-response");
     resp.classList.add("visible");
     resp.innerHTML = `
-      <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-typing">escribiendo…</span></div>
+      <div class="llm-header"><span class="llm-icon">🤖</span>${modeTagHTML(consultMode)}<span class="llm-typing">${I18N.t("challenge.typing")}</span></div>
       <div class="llm-text" id="c-live-text"><span class="llm-cursor">▋</span></div>`;
 
     const onToken = (_frag, full) => {
@@ -343,7 +345,7 @@ const Challenge = (function () {
     } catch (err) {
       console.warn("LLM live query failed:", err);
       XAPI.tutorFailed(ch, consultMode, failureReason(err), Date.now() - startedAt);
-      resp.innerHTML = `<div class="llm-msg-warn">📡 La conexión ha fallado, cosas de la IA… vuelve a intentarlo.</div>`;
+      resp.innerHTML = `<div class="llm-msg-warn">${I18N.t("challenge.failed")}</div>`;
       resp.classList.add("visible");
     }
   }
@@ -366,8 +368,8 @@ const Challenge = (function () {
     const correct = matches(selected, ch);
     XAPI.challengeAnswered(ch, selected, correct, tokensThisChallenge);
 
-    const correctTexts = getCorrectSet(ch).map(i => ch.options[i].text).join(" y ");
-    const answerLabel = getCorrectSet(ch).length > 1 ? "Respuestas correctas" : "Respuesta correcta";
+    const correctTexts = getCorrectSet(ch).map(i => I18N.pick(ch.options[i].text)).join(I18N.t("challenge.and"));
+    const answerLabel = I18N.t(getCorrectSet(ch).length > 1 ? "challenge.answerMany" : "challenge.answerOne");
 
     $("c-options").style.pointerEvents = "none";
     $("c-llm").style.display = "none";
@@ -377,10 +379,10 @@ const Challenge = (function () {
 
     $("c-feedback").innerHTML = `
       <div class="fb-icon ${correct ? "fb-correct" : "fb-wrong"}">${correct ? "✓" : "✗"}</div>
-      <div class="fb-result ${correct ? "fb-correct" : "fb-wrong"}">${correct ? "¡Correcto!" : "Incorrecto"}</div>
+      <div class="fb-result ${correct ? "fb-correct" : "fb-wrong"}">${I18N.t(correct ? "challenge.correct" : "challenge.incorrect")}</div>
       ${correct ? "" : `<div class="fb-answer">${answerLabel}: ${correctTexts}</div>`}
-      ${tokensThisChallenge > 0 ? `<div class="fb-tokens">Tokens usados: ${tokensThisChallenge}</div>` : ""}
-      <button id="c-continue" class="btn-primary">Continuar →</button>
+      ${tokensThisChallenge > 0 ? `<div class="fb-tokens">${I18N.t("challenge.tokensUsed", { tokens: tokensThisChallenge })}</div>` : ""}
+      <button id="c-continue" class="btn-primary">${I18N.t("challenge.continue")}</button>
     `;
     $("c-continue").addEventListener("click", () => {
       XAPI.challengeClosed();

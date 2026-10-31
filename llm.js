@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global window */
+/* global window, I18N */
 
 const LLM = (function () {
 
@@ -44,10 +44,17 @@ const LLM = (function () {
     else active = Math.max(0, active - 1);
   }
 
+  // Config prompts may be a string or { es, en }; {language} becomes e.g. "Spanish".
+  function localize(value) {
+    const text = window.I18N ? I18N.pick(value) : value;
+    const language = window.I18N ? I18N.languageName() : "Spanish";
+    return String(text || "").replace(/\{language\}/g, language);
+  }
+
   function systemPrompt(consultMode) {
     const c = llmCfg();
     const instr = (c.modeInstructions && c.modeInstructions[consultMode]) || "";
-    return `${c.system || ""}${instr}`;
+    return `${localize(c.system)}${localize(instr)}`;
   }
 
   // Remove any reasoning block. Reasoning models may emit it either as a paired
@@ -79,7 +86,7 @@ const LLM = (function () {
     if (c.apiToken) headers["Authorization"] = `Bearer ${c.apiToken}`;
 
     const isOpenAI = c.provider === "openai";
-    const userPrompt = `${prompt}${c.brevitySuffix || ""}`;
+    const userPrompt = `${prompt}${localize(c.brevitySuffix)}`;
 
     let body;
     if (isOpenAI) {
@@ -306,7 +313,7 @@ const LLM = (function () {
     }).catch(() => { /* best-effort; ignore */ });
   }
 
-  return { query, complete, warmup, cost, countWords };
+  return { query, complete, warmup, cost, countWords, localize };
 })();
 
 window.LLM = LLM;

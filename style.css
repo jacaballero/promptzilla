@@ -720,6 +720,31 @@ body.adventure {
   filter: drop-shadow(0 0 24px rgba(0,255,136,0.18));
 }
 .start-intro { font-size: 0.98rem; line-height: 1.55; }
+.start-lang {
+  align-self: flex-end;
+  display: flex;
+  gap: 6px;
+}
+.start-lang:empty { display: none; }
+.start-lang-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.start-lang-btn:hover { color: var(--text); }
+.start-lang-btn.active {
+  color: var(--bg-dark);
+  background: var(--neon-green);
+  border-color: var(--neon-green);
+  cursor: default;
+}
 .start-rules {
   list-style: disc;
   text-align: left;
