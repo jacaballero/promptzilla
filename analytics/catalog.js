@@ -8,7 +8,6 @@ const fs = require("fs");
 const path = require("path");
 
 const GAME_DIR = process.env.GAME_DIR || "/game";
-const FILES = ["i18n/es.js", "i18n/en.js", "content.js", "scenes.data.js", "dialogues.data.js", "i18n.js", "xapi.js"];
 const BASE = "https://promptzilla.local/xapi";
 
 global.window = global;
@@ -21,15 +20,26 @@ const stub = (name, value) => Object.defineProperty(global, name, { value, confi
 stub("navigator", { languages: [] });
 stub("localStorage", { getItem: () => null, setItem: () => {} });
 
-const i18nDir = path.join(GAME_DIR, "i18n");
-const languages = fs.existsSync(i18nDir) ? fs.readdirSync(i18nDir).filter(f => f.endsWith(".js")).map(f => `i18n/${f}`) : [];
-[...new Set([...languages, ...FILES])].forEach(file => {
+const readJSON = file => JSON.parse(fs.readFileSync(path.join(GAME_DIR, file), "utf8"));
+["dialogues.data.js", "i18n.js", "xapi.js"].forEach(file => {
   const code = fs.readFileSync(path.join(GAME_DIR, file), "utf8").replace(/^const (I18N|XAPI) =/m, "global.$1 =");
   (0, eval)(code);
 });
 
-const out = {};
+global.SCENES = readJSON("scenes.json");
+global.CHALLENGES = readJSON("content.json").challenges;
+const strings = {};
+fs.readdirSync(path.join(GAME_DIR, "i18n")).filter(f => f.endsWith(".json"))
+  .forEach(f => { strings[f.replace(/\.json$/, "")] = readJSON(`i18n/${f}`); });
+global.I18N.init(strings, "es");
+
+const names = {};
 global.XAPI.catalog().forEach(a => {
-  if (a.definition && a.definition.name) out[a.id.slice(BASE.length)] = a.definition.name;
+  if (a.definition && a.definition.name) names[a.id.slice(BASE.length)] = a.definition.name;
 });
-process.stdout.write(JSON.stringify(out));
+// Option ids per dialogue node, to translate responses logged as an index by older versions.
+const options = {};
+Object.entries(global.DIALOGUES).forEach(([d, dlg]) => Object.entries(dlg.nodes).forEach(([n, node]) => {
+  if (node.options) options[`/dialogue/${d}/node/${n}`] = node.options.map((o, i) => o.id ?? String(i));
+}));
+process.stdout.write(JSON.stringify({ names, options }));

@@ -4,14 +4,18 @@
 // (it is gitignored) that sets `window.APP_CONFIG` with only the keys you want
 // to change. `boot.js` deep-merges APP_CONFIG on top of these defaults.
 //
-// Data is a plain object wrapped in one assignment so it works both when the
-// game is opened directly (file://) and when served over HTTP. When we move to
-// a Docker/served setup later, switching these to pure .json + fetch is trivial.
+// Data is a plain object wrapped in one assignment, loaded with a <script> tag.
 
 "use strict";
 
 /* global window */
 window.APP_CONFIG_DEFAULT = {
+  // Game languages: one i18n/<code>.json per entry; `default` when none matches.
+  i18n: {
+    languages: ["es", "en"],
+    default: "es"
+  },
+
   economy: {
     initialTokens: 150,
 
@@ -78,8 +82,7 @@ window.APP_CONFIG_DEFAULT = {
   // `endpoint`, which Caddy proxies to the LRS adding the credentials.
   xapi: {
     enabled: false,
-    // Relative = served by the container. If index.html is opened as file://,
-    // use the absolute URL, e.g. "http://localhost:8080/xapi/statements".
+    // Relative: the container proxies it to the LRS (see Caddyfile).
     endpoint: "/xapi/statements",
     // Prefix of activity IDs; keep it stable across deployments so traces match.
     activityBase: "https://promptzilla.uca.es/xapi",

@@ -8,13 +8,14 @@ config.prod.example.js
 .dockerignore
 Dockerfile
 docker-compose.yml
+docker-compose.dev.yml
 
 # Docs and licensing (not needed inside the image).
 README.md
 LICENSE
 
 # Tooling and build helpers.
-assets/*.py
+tools
 analytics
 **/__pycache__
 .env

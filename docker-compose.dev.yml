@@ -1,0 +1,8 @@
+# Development override: serve the working copy instead of the files baked into
+# the image, so edits show up on reload. Enable it with
+# COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml in your local .env.
+services:
+  web:
+    volumes:
+      - ./:/srv:ro
+      - ./config.js:/srv/config.js:ro

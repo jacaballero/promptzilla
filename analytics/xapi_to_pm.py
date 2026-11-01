@@ -134,20 +134,26 @@ def game_catalog():
         out = subprocess.run(["node", script], capture_output=True, text=True, check=True, timeout=60)
         return json.loads(out.stdout)
     except (OSError, subprocess.SubprocessError, ValueError) as err:
-        print(f"Warning: game catalog unavailable ({err}); using names from the statements.", file=sys.stderr)
-        return {}
+        detail = getattr(err, "stderr", "") or ""
+        print(f"Warning: game catalog unavailable ({err}) {detail.strip()[-300:]}\n"
+              "Using names from the statements.", file=sys.stderr)
+        return {"names": {}, "options": {}}
 
 
 ACTIVITY_PATH = re.compile(r"/(?:game|report|scene|character|dialogue|challenge)(?:/.*)?$")
 
 
-def resolve_names(statements):
-    catalog = game_catalog()
+def activity_path(iri):
+    m = ACTIVITY_PATH.search(iri or "")
+    return m.group(0) if m else None
+
+
+def resolve_names(statements, catalog_names):
     names = latest_names(statements)
     for iri in names:
-        m = ACTIVITY_PATH.search(iri)
-        if m and m.group(0) in catalog:
-            names[iri] = {**names[iri], **catalog[m.group(0)]}
+        path = activity_path(iri)
+        if path in catalog_names:
+            names[iri] = {**names[iri], **catalog_names[path]}
     return names
 
 
@@ -169,7 +175,7 @@ def ext_short(exts, prefix):
     return out
 
 
-def to_row(st, vocab_ext, lang, names):
+def to_row(st, vocab_ext, lang, names, catalog):
     ctx = st.get("context", {})
     if ctx.get("platform") != "Promptzilla" or not ctx.get("registration"):
         return None
@@ -181,6 +187,10 @@ def to_row(st, vocab_ext, lang, names):
     verb = (verb_obj.get("display") or {}).get("en-US") or short(verb_obj.get("id"))
     obj_type = short(definition.get("type"))
     response = result.get("response")
+    # Older versions logged the option position; translate it to the option id.
+    node_options = catalog.get("options", {}).get(activity_path(obj.get("id")))
+    if verb == "selected" and node_options and str(response).isdigit() and int(response) < len(node_options):
+        response = node_options[int(response)]
     name_map = names.get(obj.get("id")) or definition.get("name")
 
     labels = {}
@@ -189,7 +199,8 @@ def to_row(st, vocab_ext, lang, names):
         type_label = TYPE_LABELS.get(code, {}).get(obj_type, obj_type)
         name = lang_value(name_map, code) or short(obj.get("id"))
         fine = f"{verb_label} {name}"
-        if verb == "selected" and response is not None:
+        # Dialogue choices are implied by the next step; keep them only in `response`.
+        if verb == "selected" and response is not None and not node_options:
             fine += f" → {RESPONSE_LABELS.get(code, {}).get(response, response)}"
         labels[f"activity_fine_{code}"] = fine
         labels[f"activity_coarse_{code}"] = f"{verb_label} {type_label}"
@@ -244,8 +255,9 @@ def main():
 
     vocab_ext = args.vocab_ext if args.vocab_ext.endswith("/") else args.vocab_ext + "/"
     statements = list(fetch_statements(args.endpoint, args.key, args.secret, args.since, args.until))
-    names = resolve_names(statements)
-    rows = [r for r in (to_row(st, vocab_ext, args.lang, names) for st in statements) if r]
+    catalog = game_catalog()
+    names = resolve_names(statements, catalog.get("names", {}))
+    rows = [r for r in (to_row(st, vocab_ext, args.lang, names, catalog) for st in statements) if r]
     if not args.include_debug:
         rows = [r for r in rows if not r["debug"]]
     if args.group:

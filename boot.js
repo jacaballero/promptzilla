@@ -1,13 +1,12 @@
 // Promptzilla — Bootstrap / config resolver
-// Runs after config.default.js, the optional local config.js and content.js.
-// It deep-merges the local override on top of the defaults and exposes the
-// resolved globals the rest of the game reads: window.CONFIG and
-// window.CHALLENGES. Keeping this here means engine.js / challenge.js don't
-// need to know where the data came from.
+// Runs after config.default.js and the optional local config.js. It deep-merges
+// the local override on top of the defaults into window.CONFIG, then loads the
+// JSON data (content, scenes, profanity list, i18n texts). window.GAME_READY
+// resolves once everything is in place; engine.js starts the game after it.
 
 "use strict";
 
-/* global window */
+/* global window, fetch, I18N */
 (function () {
   function isObject(v) {
     return v && typeof v === "object" && !Array.isArray(v);
@@ -31,6 +30,26 @@
   const local = window.APP_CONFIG || {};        // from optional config.js (may be absent)
   window.CONFIG = deepMerge(defaults, local);
 
-  const content = window.CONTENT || {};
-  window.CHALLENGES = content.challenges || [];
+  function getJSON(url) {
+    return fetch(url, { cache: "no-cache" }).then(resp => {
+      if (!resp.ok) throw new Error(`${url}: HTTP ${resp.status}`);
+      return resp.json();
+    });
+  }
+
+  const i18nCfg = window.CONFIG.i18n || {};
+  const languages = i18nCfg.languages || ["es"];
+
+  window.GAME_READY = Promise.all([
+    getJSON("content.json"),
+    getJSON("scenes.json"),
+    getJSON("profanity.json"),
+    ...languages.map(code => getJSON(`i18n/${code}.json`))
+  ]).then(([content, scenes, profanity, ...texts]) => {
+    window.CONTENT = content;
+    window.CHALLENGES = content.challenges || [];
+    window.SCENES = scenes;
+    window.PROFANITY = profanity;
+    I18N.init(Object.fromEntries(languages.map((code, i) => [code, texts[i]])), i18nCfg.default);
+  });
 })();

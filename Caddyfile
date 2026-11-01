@@ -28,8 +28,6 @@
 		reverse_proxy {$LRS_UPSTREAM:lrs:8080} {
 			header_up Authorization "Basic {$LRS_BASIC_AUTH}"
 			header_up X-Experience-API-Version "1.0.3"
-			# The game posts as text/plain to avoid CORS preflights.
-			header_up Content-Type "application/json"
 			header_up -Origin
 		}
 	}
@@ -38,11 +36,14 @@
 	}
 
 	# Revalidate code on every load (cheap 304s) so deploys show up without a hard reload.
-	@code path / *.html *.js *.css
+	@code path / *.html *.js *.css *.json
 	header @code Cache-Control "no-cache"
 
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=86400"
 
-	file_server
+	# Never serve deployment/tooling files (relevant when the project is bind-mounted in dev).
+	file_server {
+		hide .env* .git* *.yml *.py Dockerfile Caddyfile analytics tools
+	}
 }

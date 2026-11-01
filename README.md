@@ -3,18 +3,39 @@ Serious game to raise awareness about the (ab)use of GenAI in Higher Education.
 
 ## Run
 
-To run the game, you need to open the `index.html` file in a web browser.
+The game is always served by Docker (see [Deploying with Docker](#deploying-with-docker)):
+it needs the same-origin proxy for the LLM and the xAPI log.
 
-You can open `index.html` directly (double click, `file://`) or serve the folder
-over HTTP (e.g. `python3 -m http.server`). Both work — the data files are plain
-JavaScript globals, so no build step or server is required.
+For development, add `COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml` to
+your `.env`: the project folder is then mounted into the container, so edits
+show up on reload without rebuilding the image.
+
+```bash
+docker compose up -d      # http://localhost:8080
+```
+
+## Tools
+
+Helper scripts (not part of the game image):
+
+- `tools/llm/load_test.py` — concurrent load test against the LLM with the game's
+  own config; by default through the local proxy (`LOAD_TEST_BASE_URL` to change it).
+- `tools/art/remove_bg.py` — removes the baked-in light background from character PNGs.
+- `tools/art/make_foreground.py` — cuts a scene's foreground layer (props drawn over the player).
+- `tools/art/slice_walk_sheet.py` — slices the player walk sheet into aligned frames.
+- `tools/art/equalize_frames.py`, `tools/art/match_frames.py` — match colour and
+  exposure across animation frames so loops don't flicker.
 
 ## Configuration
 
-Two separate files drive the game so you can change content and behaviour without
+These files drive the game so you can change content and behaviour without
 touching the engine code:
 
-- `content.js` — **the questions and answers** (this is what a teacher edits).
+- `content.json` — **the questions and answers** (this is what a teacher edits).
+- `scenes.json` — scenes, hotspots and characters (positions, walkable areas).
+- `dialogues.data.js` — dialogue trees (JS because they contain game logic).
+- `i18n/<lang>.json` — every text of the interface, scenes and dialogues.
+- `profanity.json` — words blocked in prompts.
 - `config.default.js` — app configuration (token economy + LLM connection). It
   is the committed template with safe defaults.
 - `config.js` *(optional, git-ignored)* — a local override. Create it next to
@@ -22,35 +43,34 @@ touching the engine code:
 
 ### Changing the questions
 
-Edit `content.js`. Each challenge is an object inside `window.CONTENT.challenges`:
+Edit `content.json`. Each challenge is an object inside `challenges`; texts
+are given per language:
 
-```js
-window.CONTENT = {
-  challenges: [
+```json
+{
+  "challenges": [
     {
-      id: 1,                 // unique number
-      number: "1",           // label shown in the UI
-      title: "Header tags",  // short title
-      question: "Which HTML tag is correct for the <strong>most important</strong> heading?",
-      options: [
-        { label: "A", text: "<code>&lt;title&gt;</code>" },
-        { label: "B", text: "<code>&lt;h1&gt;</code>" },
-        { label: "C", text: "<code>&lt;header&gt;</code>" },
-        { label: "D", text: "<code>&lt;heading&gt;</code>" }
+      "id": 1,
+      "number": "1",
+      "title": { "es": "Etiquetas de encabezado", "en": "Heading tags" },
+      "question": { "es": "¿Qué etiqueta…?", "en": "Which tag…?" },
+      "options": [
+        { "label": "A", "text": "<code>&lt;title&gt;</code>" },
+        { "label": "B", "text": "<code>&lt;h1&gt;</code>" }
       ],
-      correct: 1             // 0-based index of the right option (use [0, 2] for multiple)
+      "correct": 1
     }
-    // add as many challenges as you want…
   ]
-};
+}
 ```
 
 Notes:
 
-- `question` and `options[].text` accept HTML (use `&lt;` / `&gt;` to display
-  literal `<` `>`).
+- `title`, `question` and `options[].text` accept a plain string (same in all
+  languages) or `{ "es": "…", "en": "…" }`. `question` and options accept HTML
+  (use `&lt;` / `&gt;` to display literal `<` `>`).
 - `correct` is a **0-based** index. For questions with several right answers use
-  an array, e.g. `correct: [0, 2]` (the game infers a multiple-choice question).
+  an array, e.g. `"correct": [0, 2]` (the game infers a multiple-choice question).
 
 ### Changing token costs and the LLM
 
@@ -96,10 +116,12 @@ order: `?lang=es|en` in the URL, the last choice made with the ES/EN buttons on
 the start screen (saved in the browser), the browser languages, and Spanish as
 the fallback.
 
-- UI strings live in `i18n/es.js` and `i18n/en.js` (one key per text).
-- Content (`content.js`, `dialogues.data.js`, `scenes.data.js`) uses
-  `{ es: "…", en: "…" }` for every translatable field; plain strings are shared
-  by all languages.
+- Texts of the interface, scenes and dialogues live in `i18n/es.json` and
+  `i18n/en.json`, one key per text: `scene.<scene>.<hotspot>`,
+  `character.<id>`, `dlg.<dialogue>.<node>` (what the character says),
+  `dlg.<dialogue>.<node>.<option>` (each option, by its `id` in
+  `dialogues.data.js`). Keys ending in `.one`/`.other` (and `.zero`) are plural forms.
+- Challenges keep their texts in `content.json` as `{ "es": "…", "en": "…" }`.
 - LLM prompts in the config may contain `{language}`, replaced by the game
   language ("Spanish"/"English"), or be `{ es: "…", en: "…" }`. Keep this in
   mind if your `config.js` overrides `system`, `modeInstructions`,
@@ -109,8 +131,8 @@ the fallback.
   for every game, so DFGs can be drawn in either (`dfg --lang`); `dfg
   --game-lang` keeps only games played in one language.
 
-To add a language: create `i18n/<code>.js`, load it in `index.html`, and add the
-`<code>` field to the content files.
+To add a language: create `i18n/<code>.json`, add `<code>` to `i18n.languages`
+in the config, and add the `<code>` field to the challenges in `content.json`.
 
 ## Deploying with Docker
 

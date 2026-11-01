@@ -1,0 +1,636 @@
+{
+  "entrance": {
+    "id": "entrance",
+    "bg": {
+      "image": "assets/scenes/scene_corridor.png",
+      "foregroundImage": "assets/scenes/scene_corridor_fg.png",
+      "theme": "hallway"
+    },
+    "walk": {
+      "yMin": 28,
+      "yMax": 76,
+      "xMin": 16,
+      "xMax": 84,
+      "near": 1.05,
+      "far": 0.5,
+      "depthFarY": 24,
+      "polygon": [
+        [
+          37,
+          77
+        ],
+        [
+          23,
+          58
+        ],
+        [
+          19,
+          52
+        ],
+        [
+          24,
+          46
+        ],
+        [
+          30,
+          42
+        ],
+        [
+          41,
+          28
+        ],
+        [
+          57,
+          28
+        ],
+        [
+          78,
+          58
+        ],
+        [
+          63,
+          77
+        ]
+      ]
+    },
+    "charScale": 0.7,
+    "obstacles": [
+      {
+        "x": 10,
+        "y": 56,
+        "w": 30,
+        "h": 20
+      },
+      {
+        "x": 27.3,
+        "y": 35.5,
+        "w": 3.5,
+        "h": 3.5
+      },
+      {
+        "x": 32.5,
+        "y": 33.5,
+        "w": 2.2,
+        "h": 2.4
+      },
+      {
+        "x": 68,
+        "y": 39,
+        "w": 6,
+        "h": 4
+      }
+    ],
+    "entryPoints": {
+      "default": {
+        "x": 50,
+        "y": 72
+      },
+      "fromClassroom": {
+        "x": 21.5,
+        "y": 50
+      },
+      "fromClassroom2": {
+        "x": 40,
+        "y": 32
+      },
+      "fromStudy": {
+        "x": 70,
+        "y": 60
+      },
+      "fromRooftop": {
+        "x": 48,
+        "y": 38
+      }
+    },
+    "characters": [],
+    "hotspots": [
+      {
+        "id": "door-classroom",
+        "kind": "exit",
+        "target": "classroom",
+        "x": 11,
+        "y": 7,
+        "w": 11,
+        "h": 45,
+        "approach": {
+          "x": 21.5,
+          "y": 50
+        }
+      },
+      {
+        "id": "door-classroom2",
+        "kind": "exit",
+        "target": "classroom2",
+        "x": 33.4,
+        "y": 7,
+        "w": 5,
+        "h": 28,
+        "approach": {
+          "x": 40,
+          "y": 32
+        }
+      },
+      {
+        "id": "door-study",
+        "kind": "exit",
+        "target": "studyroom",
+        "x": 81,
+        "y": 9,
+        "w": 15,
+        "h": 50,
+        "approach": {
+          "x": 74,
+          "y": 56
+        }
+      },
+      {
+        "id": "stairs",
+        "kind": "exit",
+        "target": "rooftop",
+        "targetEntry": "fromCorridor",
+        "x": 45,
+        "y": 0,
+        "w": 10,
+        "h": 18,
+        "approach": {
+          "x": 48,
+          "y": 30
+        }
+      },
+      {
+        "id": "poster",
+        "kind": "look",
+        "x": 71,
+        "y": 7,
+        "w": 12,
+        "h": 33,
+        "approach": {
+          "x": 66,
+          "y": 56
+        }
+      },
+      {
+        "id": "street-door",
+        "kind": "exit",
+        "target": "plaza",
+        "targetEntry": "fromCorridor",
+        "x": 27,
+        "y": 66,
+        "w": 46,
+        "h": 31,
+        "approach": {
+          "x": 50,
+          "y": 72
+        }
+      }
+    ]
+  },
+  "classroom": {
+    "id": "classroom",
+    "bg": {
+      "image": "assets/scenes/scene_class_room.png",
+      "theme": "classroom"
+    },
+    "walk": {
+      "yMin": 66,
+      "yMax": 95,
+      "near": 1,
+      "far": 0.72
+    },
+    "obstacles": [
+      {
+        "x": 91,
+        "y": 60,
+        "w": 13,
+        "h": 5
+      },
+      {
+        "x": 5,
+        "y": 60,
+        "w": 5,
+        "h": 5
+      }
+    ],
+    "entryPoints": {
+      "default": {
+        "x": 76,
+        "y": 88
+      },
+      "fromEntrance": {
+        "x": 78,
+        "y": 88
+      }
+    },
+    "characters": [
+      {
+        "id": "teacher",
+        "sprite": "teacher",
+        "x": 38,
+        "y": 84,
+        "dialogue": "teacher",
+        "hit": {
+          "w": 33,
+          "h": 99
+        }
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "door-out",
+        "kind": "exit",
+        "target": "entrance",
+        "targetEntry": "fromClassroom",
+        "x": 88,
+        "y": 70,
+        "w": 22,
+        "h": 34,
+        "approach": {
+          "x": 94,
+          "y": 90
+        }
+      },
+      {
+        "id": "blackboard",
+        "kind": "look",
+        "x": 0,
+        "y": 4,
+        "w": 32,
+        "h": 44,
+        "approach": {
+          "x": 28,
+          "y": 84
+        }
+      }
+    ]
+  },
+  "classroom2": {
+    "id": "classroom2",
+    "bg": {
+      "image": "assets/scenes/scene_class_room_2.png",
+      "theme": "classroom"
+    },
+    "walk": {
+      "yMin": 69.5,
+      "yMax": 95,
+      "near": 1,
+      "far": 0.79
+    },
+    "entryPoints": {
+      "default": {
+        "x": 76,
+        "y": 88
+      },
+      "fromEntrance": {
+        "x": 78,
+        "y": 88
+      }
+    },
+    "characters": [
+      {
+        "id": "student-glasses",
+        "sprite": "student-glasses",
+        "x": 32,
+        "y": 84,
+        "scale": 1.13,
+        "animMs": 700,
+        "animSeq": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "dialogue": "studentGlasses",
+        "hit": {
+          "w": 32,
+          "h": 96
+        }
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "door-out",
+        "kind": "exit",
+        "target": "entrance",
+        "targetEntry": "fromClassroom2",
+        "x": 88,
+        "y": 70,
+        "w": 22,
+        "h": 34,
+        "approach": {
+          "x": 94,
+          "y": 90
+        }
+      },
+      {
+        "id": "blackboard",
+        "kind": "look",
+        "x": 64,
+        "y": 7,
+        "w": 36,
+        "h": 42,
+        "approach": {
+          "x": 82,
+          "y": 84
+        }
+      }
+    ]
+  },
+  "studyroom": {
+    "id": "studyroom",
+    "bg": {
+      "image": "assets/scenes/scene_study_room.png",
+      "theme": "study"
+    },
+    "walk": {
+      "yMin": 67,
+      "yMax": 95,
+      "near": 1,
+      "far": 0.72,
+      "depthFarY": 62
+    },
+    "entryPoints": {
+      "default": {
+        "x": 22,
+        "y": 88
+      },
+      "fromEntrance": {
+        "x": 20,
+        "y": 88
+      }
+    },
+    "characters": [
+      {
+        "id": "student-girl",
+        "sprite": "student-girl",
+        "x": 38.5,
+        "y": 88,
+        "scale": 1.03,
+        "dialogue": "studentGirl",
+        "hit": {
+          "w": 32,
+          "h": 96
+        }
+      },
+      {
+        "id": "student-boy",
+        "sprite": "student-boy",
+        "x": 66,
+        "y": 93,
+        "dialogue": "studentBoy",
+        "hit": {
+          "w": 33,
+          "h": 98
+        }
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "door-out",
+        "kind": "exit",
+        "target": "entrance",
+        "targetEntry": "fromStudy",
+        "x": -9,
+        "y": 67,
+        "w": 22,
+        "h": 35,
+        "approach": {
+          "x": 6,
+          "y": 90
+        }
+      },
+      {
+        "id": "vending",
+        "kind": "look",
+        "x": 80,
+        "y": 9,
+        "w": 20,
+        "h": 58,
+        "approach": {
+          "x": 79,
+          "y": 70
+        }
+      }
+    ]
+  },
+  "rooftop": {
+    "id": "rooftop",
+    "bg": {
+      "image": "assets/scenes/scene_rooftop.png",
+      "theme": "hallway"
+    },
+    "walk": {
+      "yMin": 64,
+      "yMax": 90,
+      "xMin": 18,
+      "xMax": 95,
+      "near": 1,
+      "far": 0.6
+    },
+    "entryPoints": {
+      "default": {
+        "x": 26,
+        "y": 86
+      },
+      "fromCorridor": {
+        "x": 26,
+        "y": 86
+      }
+    },
+    "characters": [
+      {
+        "id": "promptzilla",
+        "sprite": "promptzilla",
+        "x": 66,
+        "y": 97,
+        "scale": 1.65,
+        "dialogue": "promptzilla",
+        "hit": {
+          "w": 66,
+          "h": 96
+        },
+        "noShadow": true,
+        "animMs": 500,
+        "approach": {
+          "x": 43,
+          "y": 90
+        },
+        "animSeq": [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          2,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1
+        ]
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "door-down",
+        "kind": "exit",
+        "target": "entrance",
+        "targetEntry": "fromRooftop",
+        "x": 8,
+        "y": 28,
+        "w": 10,
+        "h": 39,
+        "approach": {
+          "x": 24,
+          "y": 86
+        }
+      },
+      {
+        "id": "skyline",
+        "kind": "look",
+        "x": 74,
+        "y": 6,
+        "w": 28,
+        "h": 38,
+        "approach": {
+          "x": 95,
+          "y": 84
+        }
+      }
+    ]
+  },
+  "plaza": {
+    "id": "plaza",
+    "bg": {
+      "image": "assets/scenes/scene_entrance.png",
+      "theme": "hallway"
+    },
+    "walk": {
+      "yMin": 56,
+      "yMax": 96,
+      "xMin": 12,
+      "xMax": 88,
+      "near": 1.7,
+      "far": 0.6,
+      "polygon": [
+        [
+          22,
+          95
+        ],
+        [
+          16,
+          72
+        ],
+        [
+          30,
+          60
+        ],
+        [
+          42,
+          56
+        ],
+        [
+          58,
+          56
+        ],
+        [
+          70,
+          60
+        ],
+        [
+          84,
+          72
+        ],
+        [
+          78,
+          95
+        ]
+      ]
+    },
+    "charScale": 0.5,
+    "entryPoints": {
+      "default": {
+        "x": 50,
+        "y": 84
+      },
+      "fromCorridor": {
+        "x": 50,
+        "y": 63
+      }
+    },
+    "characters": [
+      {
+        "id": "students-plaza",
+        "sprite": "students-plaza",
+        "x": 29,
+        "y": 85,
+        "scale": 1.08,
+        "static": true,
+        "animMs": 450,
+        "animSeq": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "students-talk",
+        "kind": "look",
+        "x": 16,
+        "y": 42,
+        "w": 26,
+        "h": 44,
+        "approach": {
+          "x": 46,
+          "y": 84
+        }
+      },
+      {
+        "id": "door-in",
+        "kind": "exit",
+        "target": "entrance",
+        "targetEntry": "default",
+        "x": 40,
+        "y": 30,
+        "w": 20,
+        "h": 30,
+        "approach": {
+          "x": 50,
+          "y": 58
+        }
+      },
+      {
+        "id": "billboard",
+        "kind": "look",
+        "x": 84,
+        "y": 36,
+        "w": 8,
+        "h": 25,
+        "approach": {
+          "x": 78,
+          "y": 74
+        }
+      },
+      {
+        "id": "scooter",
+        "kind": "look",
+        "x": 8,
+        "y": 48,
+        "w": 14,
+        "h": 16,
+        "approach": {
+          "x": 24,
+          "y": 70
+        }
+      }
+    ]
+  }
+}

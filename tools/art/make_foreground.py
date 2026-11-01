@@ -18,7 +18,7 @@ import pathlib
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-SCENES_DIR = pathlib.Path(__file__).parent / "scenes"
+SCENES_DIR = pathlib.Path(__file__).resolve().parents[2] / "assets" / "scenes"
 
 # Polygons in normalized [0..1] coordinates (x, y), one list per prop.
 POLYS = {

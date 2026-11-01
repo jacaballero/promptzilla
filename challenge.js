@@ -220,7 +220,7 @@ const Challenge = (function () {
     const cost = LLM.cost(value, mode);
     const affordable = cost <= GAME.tokens;
     el.textContent = affordable
-      ? I18N.t("challenge.cost", { cost, words })
+      ? I18N.t("challenge.cost", { cost, count: words })
       : I18N.t("challenge.costTooHigh", { cost, tokens: GAME.tokens });
     el.classList.toggle("c-cost-warn", !affordable);
     if (consultBtn) consultBtn.disabled = busy || !affordable || GAME.tokens <= 0;

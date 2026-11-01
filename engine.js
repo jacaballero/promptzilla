@@ -89,7 +89,8 @@ const idleTimers = [];
 let curDialogue = null;
 
 // ─── Boot ───────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
+// Scripts run at the end of <body>, so the DOM exists; the JSON data may not yet.
+window.GAME_READY.then(() => {
   stageEl = document.getElementById("stage");
   captionEl = document.getElementById("caption");
   dialogueEl = document.getElementById("dialogue-box");
@@ -102,6 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshHUD();
   if (window.LLM && LLM.warmup) LLM.warmup();   // pre-warm the model while the start screen is shown
   showStartScreen();
+}).catch(err => {
+  console.error("Could not load game data:", err);
+  const status = document.getElementById("start-status");
+  if (status) status.textContent = "Error loading the game data. / Error al cargar los datos del juego.";
 });
 
 // ─── Start screen ───────────────────────────────────────────────────────────
@@ -199,7 +204,7 @@ function changeScene(sceneId, entryKey) {
     stageEl.appendChild(fg);
   }
 
-  if (captionEl) captionEl.textContent = I18N.pick(scene.caption) || I18N.pick(scene.name);
+  if (captionEl) captionEl.textContent = I18N.t(`scene.${scene.id}.caption`, null, "") || I18N.t(`scene.${scene.id}.name`);
   if (DEBUG) drawWalkDebug(scene);
 }
 
@@ -210,7 +215,7 @@ const DEBUG = new URLSearchParams(location.search).has("debug");
 window.DEBUG = DEBUG;
 
 // Walk-area overlay:
-// Green: walkable polygon (vertices numbered as in scenes.data.js).
+// Green: walkable polygon (vertices numbered as in scenes.json).
 // Red: obstacles. Yellow: hotspot/character approach points. The top-left
 // readout shows the cursor position in scene percentages.
 
@@ -234,7 +239,7 @@ function drawWalkDebug(scene) {
     layer.appendChild(el);
   };
   poly.forEach(([x, y], i) => label(x, y, `${i + 1} (${x}, ${y})`, "wd-vertex"));
-  scene.hotspots.forEach(h => h.approach && label(h.approach.x, h.approach.y, `▼ ${I18N.pick(h.label)}`, "wd-approach"));
+  scene.hotspots.forEach(h => h.approach && label(h.approach.x, h.approach.y, `▼ ${hotspotLabel(scene.id, h)}`, "wd-approach"));
   (scene.characters || []).forEach(c => c.approach && label(c.approach.x, c.approach.y, `▼ ${c.id}`, "wd-approach"));
 
   const cursor = document.createElement("span");
@@ -524,7 +529,7 @@ function onHotspotClick(h) {
     if (h.kind === "exit") {
       changeScene(h.target, h.targetEntry || "default");
     } else if (h.kind === "look") {
-      say(I18N.pick(h.look) || I18N.t("world.nothing"));
+      say(I18N.t(`scene.${GAME.sceneId}.${h.id}.look`, null, I18N.t("world.nothing")));
     }
   });
 }
@@ -554,10 +559,16 @@ function say(text) {
 function closeBubble() {
   if (sayBarEl) { sayBarEl.style.display = "none"; clearTimeout(sayBarEl._t); }
 }
+// Hotspot names live in i18n as scene.<scene>.<hotspot>; "" when there is none.
+function hotspotLabel(sceneId, h) {
+  return I18N.t(`scene.${sceneId}.${h.id}`, null, "");
+}
+
 // Places the name pill above the hotspot, or below it when there's no room up top.
 function showHoverName(h) {
-  if (!hoverNameEl || !h.label) return;
-  hoverNameEl.textContent = I18N.pick(h.label);
+  const label = hotspotLabel(GAME.sceneId, h);
+  if (!hoverNameEl || !label) return;
+  hoverNameEl.textContent = label;
   const cx = Math.max(10, Math.min(90, h.x + h.w / 2));
   hoverNameEl.style.left = cx + "%";
   if (h.y > 6) {
@@ -603,7 +614,7 @@ function renderDialogue(node) {
 
   const npc = document.createElement("div");
   npc.className = "dlg-npc";
-  npc.innerHTML = I18N.pick(node.npc, GAME) || "";
+  npc.innerHTML = dialogueText(node.npc, `dlg.${curDialogue.id}.${curDialogue.nodeId}`);
   dialogueEl.appendChild(npc);
 
   const opts = document.createElement("div");
@@ -615,15 +626,27 @@ function renderDialogue(node) {
     if (opt.action && opt.action.type === "challenge" && isChallengeAnswered(opt.action.challengeId)) return;
     const btn = document.createElement("button");
     btn.className = "dlg-option";
-    btn.innerHTML = I18N.pick(opt.text);
+    btn.innerHTML = I18N.t(optionKey(opt, i));
     btn.addEventListener("click", () => chooseOption(opt, i));
     opts.appendChild(btn);
   });
   dialogueEl.appendChild(opts);
 }
 
+function optionKey(opt, index) {
+  return opt.text || `dlg.${curDialogue.id}.${curDialogue.nodeId}.${opt.id ?? index}`;
+}
+
+// npc spec: a text key, a list of keys (joined), { key, vars }, or a function of GAME.
+function dialogueText(spec, defaultKey) {
+  const s = (typeof spec === "function" ? spec(GAME) : spec) ?? defaultKey;
+  if (Array.isArray(s)) return s.map(k => I18N.t(k)).join("");
+  if (typeof s === "object") return I18N.t(s.key, s.vars);
+  return I18N.t(s);
+}
+
 function chooseOption(opt, index) {
-  if (curDialogue) XAPI.dialogueOptionSelected(curDialogue.id, curDialogue.nodeId, index, opt.text);
+  if (curDialogue) XAPI.dialogueOptionSelected(curDialogue.id, curDialogue.nodeId, opt.id ?? String(index), optionKey(opt, index));
   if (opt.setFlag) GAME.flags[opt.setFlag] = true;
 
   if (opt.action) { handleAction(opt.action); return; }
@@ -690,7 +713,7 @@ function showEnd() {
   const total = ids.length;
   const correct = ids.filter(id => GAME.flags[answeredFlag(id)] && !GAME.flags[failedFlag(id)]).length;
   const letter = "ABCDE"[Math.min(total - correct, 4)];
-  const summary = I18N.t("end.summary", { correct, total });
+  const summary = I18N.t("end.summary", { count: correct, total });
 
   const usedRatio = spent / INITIAL_TOKENS;
   const flavor = I18N.t(usedRatio > 0.9 ? "end.flavor.high" : usedRatio < 0.25 ? "end.flavor.low" : "end.flavor.mid");

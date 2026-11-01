@@ -1,16 +1,16 @@
 // Promptzilla — Internationalisation
-// Picks the game language (?lang= > saved choice > browser languages > default),
-// translates UI strings from window.I18N_STRINGS (one file per language under
-// i18n/) and resolves bilingual content values written as { es: "…", en: "…" }.
+// Picks the game language (?lang= > saved choice > browser languages > default)
+// and translates texts from i18n/<code>.json (UI, scenes and dialogues). boot.js
+// loads those files and calls I18N.init(); challenge texts in content.json use
+// inline values { es: "…", en: "…" } resolved with pick().
 //
-//   I18N.lang                      current language code ("es", "en"…)
-//   I18N.t(key, vars)              UI string; {name} placeholders or function entries
-//   I18N.pick(value, ...args)      content value in the current language
-//   I18N.map(value)                { "es-ES": …, "en-US": … } for xAPI language maps
+//   I18N.t(key, vars)              text; {name} placeholders. With vars.count, falls back
+//                                  to key.zero / key.one / key.other
+//   I18N.pick(value)               inline { es, en } value in the current language
 //   I18N.setLanguage(code)         save + reload with ?lang=code
 //
-// Adding a language: create i18n/<code>.js, load it in index.html and add the
-// <code> field to the bilingual content (content.js, dialogues, scenes).
+// Adding a language: create i18n/<code>.json, list it in config `i18n.languages`
+// and add the <code> field to the challenges in content.json.
 
 "use strict";
 
@@ -18,10 +18,11 @@
 
 const I18N = (function () {
 
-  const STRINGS = window.I18N_STRINGS || {};
-  const DEFAULT = "es";
+  let STRINGS = {};
+  let DEFAULT = "es";
+  let supported = [];
+  let lang = DEFAULT;
   const STORAGE_KEY = "promptzilla.lang";
-  const supported = Object.keys(STRINGS);
 
   function base(code) { return String(code || "").toLowerCase().split(/[-_]/)[0]; }
   function isSupported(code) { return supported.includes(code); }
@@ -30,7 +31,7 @@ const I18N = (function () {
     try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
   }
   function save(code) {
-    try { localStorage.setItem(STORAGE_KEY, code); } catch { /* private mode / file:// */ }
+    try { localStorage.setItem(STORAGE_KEY, code); } catch { /* storage disabled (private mode) */ }
   }
 
   function detect() {
@@ -42,37 +43,33 @@ const I18N = (function () {
     return browser || DEFAULT;
   }
 
-  const lang = detect();
-
   function meta(code) { return (STRINGS[code] && STRINGS[code]._meta) || {}; }
 
   function format(value, vars) {
-    if (typeof value === "function") return value(vars || {});
     return String(value).replace(/\{(\w+)\}/g, (m, k) => (vars && k in vars ? vars[k] : m));
   }
 
-  function tFor(code, key, vars) {
-    const value = (STRINGS[code] && STRINGS[code][key]) ?? (STRINGS[DEFAULT] && STRINGS[DEFAULT][key]);
-    return value === undefined ? key : format(value, vars);
+  function lookup(code, key) {
+    return (STRINGS[code] && STRINGS[code][key]) ?? (STRINGS[DEFAULT] && STRINGS[DEFAULT][key]);
+  }
+
+  function tFor(code, key, vars, fallback) {
+    let value = lookup(code, key);
+    if (value === undefined && vars && typeof vars.count === "number") {
+      const forms = vars.count === 0 ? ["zero", "other"] : vars.count === 1 ? ["one", "other"] : ["other"];
+      value = forms.map(f => lookup(code, `${key}.${f}`)).find(v => v !== undefined);
+    }
+    if (value === undefined) return fallback !== undefined ? fallback : key;
+    return format(value, vars);
   }
 
   function isLangMap(v) {
     return v && typeof v === "object" && !Array.isArray(v) && (DEFAULT in v || supported.some(c => c in v));
   }
 
-  function pickFor(code, value, ...args) {
-    if (typeof value === "function") return pickFor(code, value(...args));
+  function pickFor(code, value) {
     if (!isLangMap(value)) return value;
     return value[code] ?? value[DEFAULT] ?? Object.values(value)[0];
-  }
-
-  function map(value) {
-    const out = {};
-    supported.forEach(code => {
-      const v = pickFor(code, value);
-      if (v !== undefined && v !== null && v !== "") out[meta(code).locale || code] = String(v);
-    });
-    return out;
   }
 
   function setLanguage(code) {
@@ -104,20 +101,25 @@ const I18N = (function () {
     }
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyStatic);
-  else applyStatic();
+  function init(strings, defaultLang) {
+    STRINGS = strings || {};
+    supported = Object.keys(STRINGS);
+    DEFAULT = supported.includes(defaultLang) ? defaultLang : supported[0];
+    lang = detect();
+    applyStatic();
+  }
 
   return {
-    lang,
-    supported,
+    init,
+    get lang() { return lang; },
+    get supported() { return supported; },
     locale: () => meta(lang).locale || lang,
     localeOf: code => meta(code).locale || code,
     languageName: () => meta(lang).name || lang,
-    t: (key, vars) => tFor(lang, key, vars),
+    t: (key, vars, fallback) => tFor(lang, key, vars, fallback),
     tFor,
-    pick: (value, ...args) => pickFor(lang, value, ...args),
+    pick: value => pickFor(lang, value),
     pickFor,
-    map,
     setLanguage
   };
 })();

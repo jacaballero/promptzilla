@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 from scipy import ndimage
 
-CHARS = pathlib.Path(__file__).resolve().parent / "characters"
+CHARS = pathlib.Path(__file__).resolve().parents[2] / "assets" / "characters"
 SHEET = CHARS / "player_walk_sheet.png"
 N = 8
 SCALE_ADJUST = 1.0   # tweak if the walk sprite looks bigger/smaller than idle

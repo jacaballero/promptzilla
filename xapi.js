@@ -110,6 +110,7 @@ const XAPI = (function () {
     return out;
   }
   const names = value => langMap(code => plain(I18N.pickFor(code, value)));
+  const keyNames = (key, fallback) => langMap(code => plain(I18N.tFor(code, key, null, fallback)));
   const tNames = (key, title) => langMap(code => I18N.tFor(code, key, { title: plain(I18N.pickFor(code, title)) }));
 
   // ─── Activities ───────────────────────────────────────────────────────
@@ -168,13 +169,10 @@ const XAPI = (function () {
     if (!flushTimer) flushTimer = setTimeout(() => flush(false), cfg().batchMs ?? 1000);
   }
 
-  // CORS-simple request (text/plain, no custom headers, no-cors) so it also works
-  // cross-origin, e.g. index.html opened as file://; Caddy sets the real headers.
   function post(batch, keepalive) {
     fetch(cfg().endpoint || "/xapi/statements", {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(batch),
       keepalive
     }).catch(() => {});
@@ -233,10 +231,10 @@ const XAPI = (function () {
   }
 
   // ─── World ────────────────────────────────────────────────────────────
-  const sceneActivity = scene => activity(`/scene/${scene.id}`, TYPES.area, names(scene.name));
+  const sceneActivity = scene => activity(`/scene/${scene.id}`, TYPES.area, keyNames(`scene.${scene.id}.name`, scene.id));
   const hotspotActivity = (sceneId, h) =>
-    activity(`/scene/${sceneId}/hotspot/${h.id}`, TYPES.hotspot, names(h.label || h.id));
-  const characterActivity = c => activity(`/character/${c.id}`, TYPES.npc, names(c.name || c.id));
+    activity(`/scene/${sceneId}/hotspot/${h.id}`, TYPES.hotspot, keyNames(`scene.${sceneId}.${h.id}`, h.id));
+  const characterActivity = c => activity(`/character/${c.id}`, TYPES.npc, keyNames(`character.${c.id}`, c.id));
 
   function sceneAccessed(scene, entryKey) {
     track("accessed", sceneActivity(scene),
@@ -253,30 +251,27 @@ const XAPI = (function () {
   }
 
   // ─── Dialogues ────────────────────────────────────────────────────────
-  function dialogueName(dialogueId) {
-    const d = window.DIALOGUES && window.DIALOGUES[dialogueId];
-    return (d && d.name) || dialogueId;
-  }
+  const dialogueName = (code, dialogueId) => plain(I18N.tFor(code, `dlg.${dialogueId}.name`, null, dialogueId));
 
   function dialogueActivity(dialogueId) {
-    return activity(`/dialogue/${dialogueId}`, TYPES.dialog, names(dialogueName(dialogueId)));
+    return activity(`/dialogue/${dialogueId}`, TYPES.dialog, langMap(code => dialogueName(code, dialogueId)));
   }
 
   function dialogueOpened(dialogueId) {
     track("accessed", dialogueActivity(dialogueId));
   }
 
-  function dialogueOptionSelected(dialogueId, nodeId, index, text) {
+  function dialogueOptionSelected(dialogueId, nodeId, optionId, textKey) {
     track("selected", nodeActivity(dialogueId, nodeId), {
-      result: { response: String(index), extensions: resultExt({ "option-text": names(text) }) }
+      result: { response: String(optionId), extensions: resultExt({ "option-text": keyNames(textKey, "") }) }
     });
   }
 
   function nodeActivity(dialogueId, nodeId) {
     const node = window.DIALOGUES && window.DIALOGUES[dialogueId] && window.DIALOGUES[dialogueId].nodes[nodeId];
-    const nodeLabel = (node && node.label) || (window.DIALOGUE_NODE_LABELS || {})[nodeId] || nodeId;
+    const labelKey = (node && node.label) || `dlg.node.${nodeId}`;
     const nodeNames = langMap(code =>
-      `${plain(I18N.pickFor(code, dialogueName(dialogueId)))} · ${plain(I18N.pickFor(code, nodeLabel))}`);
+      `${dialogueName(code, dialogueId)} · ${plain(I18N.tFor(code, labelKey, null, nodeId))}`);
     return activity(`/dialogue/${dialogueId}/node/${nodeId}`, TYPES.dialog, nodeNames);
   }
 
@@ -389,7 +384,7 @@ const XAPI = (function () {
       list.push(dialogueActivity(id));
       Object.keys(d.nodes || {}).forEach(nodeId => list.push(nodeActivity(id, nodeId)));
     });
-    (window.CHALLENGES || (window.CONTENT && window.CONTENT.challenges) || []).forEach(ch => {
+    (window.CHALLENGES || []).forEach(ch => {
       list.push(challengeActivity(ch), tutorActivity(ch), modeActivity(ch), evaluationActivity(ch.id, ch.title));
     });
     return list;
