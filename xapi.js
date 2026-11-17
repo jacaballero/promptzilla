@@ -170,7 +170,7 @@ const XAPI = (function () {
   }
 
   function post(batch, keepalive) {
-    fetch(cfg().endpoint || "/xapi/statements", {
+    fetch(cfg().endpoint || "xapi/statements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(batch),

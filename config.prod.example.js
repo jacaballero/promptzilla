@@ -6,13 +6,14 @@
 //
 // The endpoint is RELATIVE: the browser calls the container, and Caddy proxies
 // it to the real backend (see LLM_UPSTREAM in docker-compose.yml). Same origin
-// => no CORS, no mixed-content, HTTP or HTTPS.
+// => no CORS, no mixed-content, HTTP or HTTPS. No leading slash, so it also
+// works when the game is served under a subpath (e.g. /promptzilla/).
 //
 // --- Option A: vLLM (OpenAI-compatible) --------------------------------------
 window.APP_CONFIG = {
   llm: {
     provider: "openai",
-    endpoint: "/v1/chat/completions",
+    endpoint: "v1/chat/completions",
     model: "google/gemma-4-12B-it",
     maxTokens: 1024,
     maxConcurrent: 8
@@ -27,7 +28,7 @@ window.APP_CONFIG = {
 // window.APP_CONFIG = {
 //   llm: {
 //     provider: "ollama",
-//     endpoint: "/api/generate",
+//     endpoint: "api/generate",
 //     model: "qwen3:4b",
 //     think: null,
 //     maxTokens: 1024,

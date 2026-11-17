@@ -1,7 +1,8 @@
-# HTTP on :80. The browser only talks to this container (same origin); the
-# container forwards the API path to the external LLM backend (server -> server),
-# so CORS and mixed-content never come into play. For public HTTPS, replace `:80`
-# with your domain (Caddy then provisions certificates automatically via ACME).
+# HTTP on :80 inside the container (published on WEB_PORT). The browser only talks
+# to this container (same origin); the container forwards the API path to the
+# external LLM backend (server -> server), so CORS and mixed-content never come
+# into play. For public HTTPS, replace `:80` with your domain (Caddy then
+# provisions certificates automatically via ACME).
 :80 {
 	root * /srv
 	encode gzip

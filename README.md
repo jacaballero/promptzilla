@@ -11,8 +11,10 @@ your `.env`: the project folder is then mounted into the container, so edits
 show up on reload without rebuilding the image.
 
 ```bash
-docker compose up -d      # http://localhost:8080
+docker compose up -d      # http://localhost:8888
 ```
+
+To use **http://promptzilla.localhost** (no port) instead, see [Local URL](#local-url).
 
 ## Tools
 
@@ -103,7 +105,7 @@ Two backends are supported via `provider`:
 window.APP_CONFIG = {
   llm: {
     provider: "openai",
-    endpoint: "/v1/chat/completions",   // relative → proxied by Caddy
+    endpoint: "v1/chat/completions",   // relative → proxied by Caddy
     model: "google/gemma-4-12B-it"
   }
 };
@@ -154,16 +156,17 @@ browser only ever talks to the same origin. One backend is active per deployment
 ```
 
 Because of this, the production `config.js` uses a **relative** endpoint
-(`/api/generate` or `/v1/chat/completions`): no CORS, no mixed-content, works
-over HTTP or HTTPS.
+(`api/generate` or `v1/chat/completions`, without a leading slash so it also
+works [under a subpath](#serving-under-a-subpath)): no CORS, no mixed-content,
+works over HTTP or HTTPS.
 
 ### Files
 
 - `Dockerfile` — bakes the static game into a `caddy:2-alpine` image.
 - `Caddyfile` — serves `/srv` and proxies `/api/*` and `/v1/*` to
   `{$LLM_UPSTREAM}`.
-- `docker-compose.yml` — one `web` service on port `8080`, reads `LLM_UPSTREAM`
-  from `.env`, and mounts `config.js` as a read-only volume.
+- `docker-compose.yml` — one `web` service on port `8888` (`WEB_PORT`), reads
+  `LLM_UPSTREAM` from `.env`, and mounts `config.js` as a read-only volume.
 - `.env.example` / `config.prod.example.js` — templates to copy.
 
 ### Steps
@@ -182,8 +185,8 @@ cp config.prod.example.js config.js
 docker compose up --build -d
 ```
 
-Open **http://localhost:8080**. Change the host port in `docker-compose.yml`
-if `8080` is taken. Stop with `docker compose down`; view logs with
+Open **http://localhost:8888**. Set `WEB_PORT` in `.env` if `8888` is taken.
+Stop with `docker compose down`; view logs with
 `docker compose logs -f web`. After editing static files, rebuild with
 `docker compose up --build`; changes to `config.js` (mounted volume) don't need
 a rebuild.
@@ -191,14 +194,14 @@ a rebuild.
 ### Verify
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/        # → 200
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8888/        # → 200
 
 # Ollama backend (provider "ollama")
-curl -N -X POST http://localhost:8080/api/generate \
+curl -N -X POST http://localhost:8888/api/generate \
   -d '{"model":"qwen3:4b","prompt":"hola","stream":true,"think":false}'  # → streaming NDJSON
 
 # vLLM backend (provider "openai")
-curl -N -X POST http://localhost:8080/v1/chat/completions \
+curl -N -X POST http://localhost:8888/v1/chat/completions \
   -d '{"model":"google/gemma-4-12B-it","messages":[{"role":"user","content":"hola"}],"stream":true}'  # → streaming SSE
 ```
 
@@ -212,11 +215,42 @@ If the LLM backend runs on the same machine as the container, uncomment
 `extra_hosts` in `docker-compose.yml` and set
 `LLM_UPSTREAM=host.docker.internal:11434` (or the vLLM port).
 
+### Local URL
+
+Set `WEB_PORT=80` in your local `.env` and open **http://promptzilla.localhost**:
+no port and no certificates. Chrome, Firefox and Edge resolve `*.localhost` to
+your own machine with no setup; Safari may need `127.0.0.1 promptzilla.localhost`
+in `/etc/hosts`. If port 80 is taken on your computer, keep another `WEB_PORT`
+and add it to the URL. The production server keeps its own `WEB_PORT` (8888).
+
+### Serving under a subpath
+
+The game can live under a path of a server shared with other apps, e.g.
+`http://server.domain.es/promptzilla/`. It uses only relative URLs, so the
+front proxy just has to strip the prefix and forward to the container. With
+Caddy as the front proxy:
+
+```
+:80 {
+	redir /promptzilla /promptzilla/
+	handle_path /promptzilla/* {
+		reverse_proxy 127.0.0.1:8888 {
+			flush_interval -1    # stream LLM answers as they arrive
+		}
+	}
+}
+```
+
+The trailing slash matters (`/promptzilla` would break relative URLs), hence
+the `redir`. Keep `endpoint` in `config.js` without a leading slash. The game
+stays reachable on its own port too; set `WEB_PORT=127.0.0.1:8888` in `.env` to
+make it reachable only through the proxy.
+
 ### Public HTTPS (optional)
 
 With a public domain and ports 80/443 open, replace `:80` with your domain in
 the `Caddyfile` and Caddy provisions TLS certificates automatically. On an
-internal network without a public domain, plain HTTP is enough.
+internal network (e.g. behind a VPN), plain HTTP is enough.
 
 ### Portability
 

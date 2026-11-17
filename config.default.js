@@ -82,8 +82,9 @@ window.APP_CONFIG_DEFAULT = {
   // `endpoint`, which Caddy proxies to the LRS adding the credentials.
   xapi: {
     enabled: false,
-    // Relative: the container proxies it to the LRS (see Caddyfile).
-    endpoint: "/xapi/statements",
+    // Relative (no leading slash, so it also works under a subpath): the
+    // container proxies it to the LRS (see Caddyfile).
+    endpoint: "xapi/statements",
     // Prefix of activity IDs; keep it stable across deployments so traces match.
     activityBase: "https://promptzilla.uca.es/xapi",
     batchMs: 1000,

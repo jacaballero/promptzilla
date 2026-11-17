@@ -2,25 +2,17 @@ services:
   web:
     build: .
     ports:
-      # Host port is configurable via WEB_PORT in .env (defaults to 8080).
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8888}:80"
     environment:
-      # External LLM backend the proxy forwards the API path to (host:port).
-      # Point it at your Ollama (e.g. host:11434) or vLLM (e.g. host:8002),
-      # matching the provider set in config.js. Set LLM_UPSTREAM in .env.
       - LLM_UPSTREAM=${LLM_UPSTREAM:-127.0.0.1:11434}
-      # xAPI: Caddy forwards POST /xapi/statements to the LRS with these credentials.
+      # Caddy adds these credentials when forwarding xAPI statements to the LRS.
       - LRS_UPSTREAM=lrs:8080
       - LRS_BASIC_AUTH=${LRS_BASIC_AUTH:-}
     volumes:
-      # Production config (relative endpoint "/api/generate"). Copy
-      # config.prod.example.js to config.js and edit model/endpoint.
       - ./config.js:/srv/config.js:ro
     restart: unless-stopped
-    # If this container runs on the SAME host as the LLM backend (Linux), use
-    # instead:
-    #   extra_hosts: ["host.docker.internal:host-gateway"]
-    # and set LLM_UPSTREAM=host.docker.internal:11434
+    # LLM on this same Linux host: uncomment and set LLM_UPSTREAM=host.docker.internal:<port>
+    # extra_hosts: ["host.docker.internal:host-gateway"]
 
   # Learning Record Store (xAPI). Admin UI at http://<host>:<LRS_PORT>/admin
   lrs:
@@ -39,9 +31,8 @@ services:
       - LRSQL_DB_USER=lrsql
       - LRSQL_DB_PASSWORD=${LRS_DB_PASSWORD:?set LRS_DB_PASSWORD in .env}
       - LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT=30000
-      # Browser origins allowed to use the admin UI (the LRS rejects others with 403).
       - LRSQL_ALLOWED_ORIGINS=${LRS_ALLOWED_ORIGINS:-http://localhost:${LRS_PORT:-8081},http://127.0.0.1:${LRS_PORT:-8081}}
-      # Lets the exporter page through statements in big chunks.
+      # Larger pages for the exporter.
       - LRSQL_STMT_GET_MAX=1000
     depends_on:
       db:
@@ -51,7 +42,6 @@ services:
   db:
     image: postgres:17-alpine
     ports:
-      # Bound to the host's loopback by default; set LRS_DB_BIND=0.0.0.0 to expose it.
       - "${LRS_DB_BIND:-127.0.0.1}:${LRS_DB_PORT:-5433}:5432"
     environment:
       - POSTGRES_DB=lrsql
@@ -79,7 +69,7 @@ services:
       - LRS_API_SECRET=${LRS_API_SECRET:?set LRS_API_SECRET in .env}
     volumes:
       - ./analytics/out:/out
-      # Game data, so activities are named in every language (analytics/catalog.js).
+      # Game data, to name activities in every language.
       - ./i18n:/game/i18n:ro
       - ./i18n.js:/game/i18n.js:ro
       - ./xapi.js:/game/xapi.js:ro

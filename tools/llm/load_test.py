@@ -28,7 +28,7 @@ MODE = "direct"                  # "direct" | "socratic" (elige modeInstructions
 # Si el endpoint del config es RELATIVO (p.ej. "/v1/chat/completions"), se llama
 # a través del proxy del juego, igual que los alumnos. Por defecto el contenedor
 # local; cámbialo con la variable de entorno LOAD_TEST_BASE_URL (sin barra final).
-BASE_URL = os.environ.get("LOAD_TEST_BASE_URL", "http://localhost:8080")
+BASE_URL = os.environ.get("LOAD_TEST_BASE_URL", "http://localhost:8888")
 LANGUAGE = "Spanish"            # sustituye {language} en los prompts del config
 
 # Prompt ~300 caracteres sobre HTML básico.
