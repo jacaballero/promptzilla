@@ -64,7 +64,6 @@ services:
     build: ./analytics
     image: promptzilla-analytics
     profiles: ["analytics"]
-    user: "${ANALYTICS_UID:-1000}:${ANALYTICS_GID:-1000}"
     # Relative --out-dir paths land in analytics/out/ (git-ignored).
     working_dir: /out
     environment:
@@ -89,8 +88,7 @@ services:
     build: ./analytics
     image: promptzilla-analytics
     profiles: ["analytics"]
-    user: "${ANALYTICS_UID:-1000}:${ANALYTICS_GID:-1000}"
-    entrypoint: ["python", "/app/dfg.py"]
+    entrypoint: ["/app/run-as-out-owner.sh", "python", "/app/dfg.py"]
     working_dir: /out
     volumes:
       - ./analytics/out:/out

@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends graphviz nodejs
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY xapi_to_pm.py dfg.py catalog.js ./
+COPY xapi_to_pm.py dfg.py catalog.js run-as-out-owner.sh ./
+RUN chmod +x /app/run-as-out-owner.sh
 
-ENTRYPOINT ["python", "/app/xapi_to_pm.py", "--out-dir", "/out"]
+ENTRYPOINT ["/app/run-as-out-owner.sh", "python", "/app/xapi_to_pm.py"]

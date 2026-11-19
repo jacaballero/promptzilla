@@ -308,9 +308,8 @@ docker compose run --rm analytics [--group 1A] [--since 2026-10-01] [--lang en]
 # → analytics/out/events.csv and analytics/out/events.xes
 ```
 
-The first run builds the image. On Linux, set `ANALYTICS_UID`/`ANALYTICS_GID`
-in `.env` to your `id -u`/`id -g` if they are not 1000 so the output files are
-yours.
+The first run builds the image. Output files belong to the owner of
+`analytics/out/`, with no extra configuration.
 
 Basic process mining: frequency and performance directly-follows graphs from a
 log in `analytics/out/` (`events.xes` by default, `.csv` also accepted):
