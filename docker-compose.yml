@@ -65,6 +65,8 @@ services:
     image: promptzilla-analytics
     profiles: ["analytics"]
     user: "${ANALYTICS_UID:-1000}:${ANALYTICS_GID:-1000}"
+    # Relative --out-dir paths land in analytics/out/ (git-ignored).
+    working_dir: /out
     environment:
       - LRS_ENDPOINT=http://lrs:8080/xapi
       - LRS_API_KEY=${LRS_API_KEY:?set LRS_API_KEY in .env}
