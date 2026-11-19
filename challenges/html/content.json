@@ -1,4 +1,10 @@
 {
+  "assign": {
+    "studentGirl": 1,
+    "studentBoy": 2,
+    "studentGlasses": 3,
+    "teacher": 5
+  },
   "challenges": [
     {
       "id": 1,

@@ -24,7 +24,8 @@
 //   setFlag     {string}                 set GAME.flags[flag] = true when chosen
 //   requires    {string}                 only show if GAME.flags[flag] is true
 //   hideIfFlag  {string}                 hide if GAME.flags[flag] is true
-//   action      {object}                 engine action, e.g. { type:"challenge", challengeId:1 }
+//   action      {object}                 engine action, e.g. { type:"challenge", slot:"studentGirl" }
+//                                        `slot` is looked up in the set's content.json `assign`
 //                                        challenge actions accept onWinGoto / onLoseGoto
 //                                        other actions: { type:"win" } / { type:"lose" } (end screens)
 //
@@ -40,23 +41,26 @@
 // The exam unlocks once the three practice challenges have been answered
 // (right or wrong). Only the classmate whose challenge completes the set
 // points the player to the teacher. Debug mode (?debug) skips the check.
-const PRACTICE_IDS = [1, 2, 3];
-const practiceLeft = GAME => PRACTICE_IDS.filter(id => !GAME.flags["answeredChallenge" + id]).length;
+// Which challenge each slot (dialogue id) asks comes from the active set.
+const PRACTICE_SLOTS = ["studentGirl", "studentBoy", "studentGlasses"];
+const challengeIdFor = slot => ((window.CONTENT || {}).assign || {})[slot];
+const answered = (GAME, slot) => GAME.flags["answeredChallenge" + challengeIdFor(slot)];
+const practiceLeft = GAME => PRACTICE_SLOTS.filter(slot => !answered(GAME, slot)).length;
 const practiceDone = GAME => practiceLeft(GAME) === 0;
 const afterPractice = (more, last) => GAME => practiceDone(GAME) ? last : more;
 const withHint = key => [key, "dlg.hint.lastPractice"];
-const spent = (dialogue, challengeId) => GAME =>
-  `dlg.${dialogue}.spent.${GAME.flags["failedChallenge" + challengeId] ? "failed" : "passed"}`;
+const spent = dialogue => GAME =>
+  `dlg.${dialogue}.spent.${GAME.flags["failedChallenge" + challengeIdFor(dialogue)] ? "failed" : "passed"}`;
 
 // Practice classmate: intro, already-done, a side topic and win/lose replies.
-function practiceDialogue(id, challengeId, topic) {
-  const challenge = { type: "challenge", challengeId, onWinGoto: "won", onLoseGoto: "lost" };
+function practiceDialogue(id, topic) {
+  const challenge = { type: "challenge", slot: id, onWinGoto: "won", onLoseGoto: "lost" };
   return {
     start: "root",
     nodes: {
-      root: { route: GAME => GAME.flags["answeredChallenge" + challengeId] ? "spent" : "intro" },
+      root: { route: GAME => answered(GAME, id) ? "spent" : "intro" },
       intro: { options: [{ id: "challenge", action: challenge }, { id: "topic", goto: topic }, { id: "leave", end: true }] },
-      spent: { npc: spent(id, challengeId), options: [{ id: "topic", goto: topic }, { id: "leave", end: true }] },
+      spent: { npc: spent(id), options: [{ id: "topic", goto: topic }, { id: "leave", end: true }] },
       [topic]: { options: [{ id: "challenge", action: challenge }, { id: "back", goto: "root" }] },
       won: { route: afterPractice("wonMore", "wonLast") },
       wonMore: { options: [{ id: "leave", end: true }] },
@@ -70,9 +74,9 @@ function practiceDialogue(id, challengeId, topic) {
 
 window.DIALOGUES = {
 
-  studentGirl: practiceDialogue("studentGirl", 1, "gossip"),
-  studentBoy: practiceDialogue("studentBoy", 2, "meta"),
-  studentGlasses: practiceDialogue("studentGlasses", 3, "meta"),
+  studentGirl: practiceDialogue("studentGirl", "gossip"),
+  studentBoy: practiceDialogue("studentBoy", "meta"),
+  studentGlasses: practiceDialogue("studentGlasses", "meta"),
 
   // ─── Teacher (final exam) ────────────────────────────────────────────────
   teacher: {
@@ -90,7 +94,7 @@ window.DIALOGUES = {
       insist: { options: [{ id: "leave", end: true }] },
       ready: {
         options: [
-          { id: "exam", action: { type: "challenge", challengeId: 5, onWinGoto: "passed", onLoseGoto: "failed" } },
+          { id: "exam", action: { type: "challenge", slot: "teacher", onWinGoto: "passed", onLoseGoto: "failed" } },
           { id: "leave", end: true }
         ]
       },

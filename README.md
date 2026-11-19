@@ -33,7 +33,8 @@ Helper scripts (not part of the game image):
 These files drive the game so you can change content and behaviour without
 touching the engine code:
 
-- `content.json` — **the questions and answers** (this is what a teacher edits).
+- `challenges/<set>/content.json` — **the questions and answers** of each
+  challenge set (this is what a teacher edits). `html` is the default; `css` is another.
 - `scenes.json` — scenes, hotspots and characters (positions, walkable areas).
 - `dialogues.data.js` — dialogue trees (JS because they contain game logic).
 - `i18n/<lang>.json` — every text of the interface, scenes and dialogues.
@@ -45,11 +46,14 @@ touching the engine code:
 
 ### Changing the questions
 
-Edit `content.json`. Each challenge is an object inside `challenges`; texts
-are given per language:
+Each challenge set is a folder `challenges/<set>/` with a `content.json`.
+Copy `challenges/html/` as a template. `assign` says which challenge each
+character asks (the three classmates are practice, `teacher` is the final
+exam); `challenges` holds the questions, with texts per language:
 
 ```json
 {
+  "assign": { "studentGirl": 1, "studentBoy": 2, "studentGlasses": 3, "teacher": 4 },
   "challenges": [
     {
       "id": 1,
@@ -73,6 +77,23 @@ Notes:
   (use `&lt;` / `&gt;` to display literal `<` `>`).
 - `correct` is a **0-based** index. For questions with several right answers use
   an array, e.g. `"correct": [0, 2]` (the game infers a multiple-choice question).
+
+### Choosing the challenge set
+
+The active set comes from `content.set` in the config; `?set=<name>` in the URL
+picks another one, but only if it is listed in `content.sets`:
+
+```js
+window.APP_CONFIG = {
+  content: { set: "css", sets: ["html", "css"] }
+};
+```
+
+In Docker, `./challenges` and `config.js` are mounted into the container, so
+adding a set (new folder + its name in `content.sets`) or switching the default
+only needs a browser reload — no rebuild. xAPI activity ids include the set
+(`/challenge/<set>/<id>`); rebuild the analytics image after changing
+`analytics/catalog.js`.
 
 ### Changing token costs and the LLM
 
@@ -123,7 +144,7 @@ the fallback.
   `character.<id>`, `dlg.<dialogue>.<node>` (what the character says),
   `dlg.<dialogue>.<node>.<option>` (each option, by its `id` in
   `dialogues.data.js`). Keys ending in `.one`/`.other` (and `.zero`) are plural forms.
-- Challenges keep their texts in `content.json` as `{ "es": "…", "en": "…" }`.
+- Challenges keep their texts in `challenges/<set>/content.json` as `{ "es": "…", "en": "…" }`.
 - LLM prompts in the config may contain `{language}`, replaced by the game
   language ("Spanish"/"English"), or be `{ es: "…", en: "…" }`. Keep this in
   mind if your `config.js` overrides `system`, `modeInstructions`,
@@ -134,7 +155,7 @@ the fallback.
   --game-lang` keeps only games played in one language.
 
 To add a language: create `i18n/<code>.json`, add `<code>` to `i18n.languages`
-in the config, and add the `<code>` field to the challenges in `content.json`.
+in the config, and add the `<code>` field to the challenges of every set.
 
 ## Deploying with Docker
 

@@ -122,9 +122,11 @@ const XAPI = (function () {
 
   function gameActivity() { return activity("/game", TYPES.game, names("Promptzilla")); }
 
+  const challengePath = id => `/challenge/${window.CHALLENGE_SET || "html"}/${id}`;
+
   function challengeActivity(ch) {
     const correct = Array.isArray(ch.correct) ? ch.correct : [ch.correct];
-    return activity(`/challenge/${ch.id}`, TYPES.question, names(ch.title), {
+    return activity(challengePath(ch.id), TYPES.question, names(ch.title), {
       interactionType: "choice",
       correctResponsesPattern: [correct.map(String).join("[,]")],
       choices: (ch.options || []).map((o, i) => ({
@@ -311,11 +313,11 @@ const XAPI = (function () {
   function challengeClosed() { currentChallenge = null; }
 
   function tutorActivity(ch) {
-    return activity(`/challenge/${ch.id}/tutor`, TYPES.tutor, tNames("xapi.tutor", ch.title));
+    return activity(`${challengePath(ch.id)}/tutor`, TYPES.tutor, tNames("xapi.tutor", ch.title));
   }
-  const modeActivity = ch => activity(`/challenge/${ch.id}/llm-mode`, TYPES.menu, tNames("xapi.mode", ch.title));
+  const modeActivity = ch => activity(`${challengePath(ch.id)}/llm-mode`, TYPES.menu, tNames("xapi.mode", ch.title));
   const evaluationActivity = (id, title) =>
-    activity(`/challenge/${id}/prompt-evaluation`, TYPES.evaluation, tNames("xapi.evaluation", title));
+    activity(`${challengePath(id)}/prompt-evaluation`, TYPES.evaluation, tNames("xapi.evaluation", title));
   const reportActivity = () => activity("/report", TYPES.report, langMap(code => I18N.tFor(code, "xapi.report")));
 
   function modeSelected(ch, mode) {

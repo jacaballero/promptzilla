@@ -18,6 +18,11 @@ window.APP_CONFIG = {
     maxTokens: 1024,
     maxConcurrent: 8
   },
+  // Challenge set by default (challenges/<set>/); ?set=<name> picks one of `sets`.
+  content: {
+    set: "html",
+    sets: ["html", "css"]
+  },
   // Anonymous interaction log sent to the LRS; set to false to log nothing.
   xapi: {
     enabled: true

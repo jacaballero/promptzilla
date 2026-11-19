@@ -40,8 +40,19 @@
   const i18nCfg = window.CONFIG.i18n || {};
   const languages = i18nCfg.languages || ["es"];
 
+  const contentCfg = window.CONFIG.content || {};
+  const allowedSets = contentCfg.sets || [];
+  const validSet = s => typeof s === "string" && /^[a-z0-9_-]+$/.test(s) && allowedSets.includes(s);
+  const requested = new URLSearchParams(window.location.search).get(contentCfg.param || "set");
+  let set = contentCfg.set || "html";
+  if (requested !== null) {
+    if (validSet(requested)) set = requested;
+    else console.warn(`Challenge set "${requested}" not allowed; using "${set}".`);
+  }
+  window.CHALLENGE_SET = set;
+
   window.GAME_READY = Promise.all([
-    getJSON("content.json"),
+    getJSON(`challenges/${set}/content.json`),
     getJSON("scenes.json"),
     getJSON("profanity.json"),
     ...languages.map(code => getJSON(`i18n/${code}.json`))

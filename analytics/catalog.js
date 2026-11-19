@@ -27,15 +27,22 @@ const readJSON = file => JSON.parse(fs.readFileSync(path.join(GAME_DIR, file), "
 });
 
 global.SCENES = readJSON("scenes.json");
-global.CHALLENGES = readJSON("content.json").challenges;
+global.CHALLENGES = [];
 const strings = {};
 fs.readdirSync(path.join(GAME_DIR, "i18n")).filter(f => f.endsWith(".json"))
   .forEach(f => { strings[f.replace(/\.json$/, "")] = readJSON(`i18n/${f}`); });
 global.I18N.init(strings, "es");
 
 const names = {};
-global.XAPI.catalog().forEach(a => {
+const addNames = () => global.XAPI.catalog().forEach(a => {
   if (a.definition && a.definition.name) names[a.id.slice(BASE.length)] = a.definition.name;
+});
+addNames();
+const setsDir = path.join(GAME_DIR, "challenges");
+fs.readdirSync(setsDir).filter(s => fs.existsSync(path.join(setsDir, s, "content.json"))).forEach(set => {
+  global.CHALLENGE_SET = set;
+  global.CHALLENGES = readJSON(`challenges/${set}/content.json`).challenges || [];
+  addNames();
 });
 // Option ids per dialogue node, to translate responses logged as an index by older versions.
 const options = {};

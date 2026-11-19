@@ -1,0 +1,135 @@
+{
+  "assign": {
+    "studentGirl": 1,
+    "studentBoy": 2,
+    "studentGlasses": 3,
+    "teacher": 4
+  },
+  "challenges": [
+    {
+      "id": 1,
+      "number": "1",
+      "title": {
+        "es": "Clases en CSS y HTML",
+        "en": "Classes in CSS and HTML"
+      },
+      "question": {
+        "es": "Quieres que varios párrafos compartan el estilo <code>destacado</code>. ¿Qué combinación de CSS y HTML es correcta?",
+        "en": "You want several paragraphs to share the <code>destacado</code> style. Which CSS and HTML combination is correct?"
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>#destacado { … }</code> + <code>&lt;p id=\"destacado\"&gt;</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>.destacado { … }</code> + <code>&lt;p class=\"destacado\"&gt;</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>.destacado { … }</code> + <code>&lt;p class=\".destacado\"&gt;</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>destacado { … }</code> + <code>&lt;p style=\"destacado\"&gt;</code>"
+        }
+      ],
+      "correct": 1
+    },
+    {
+      "id": 2,
+      "number": "2",
+      "title": {
+        "es": "Estructura de una regla",
+        "en": "Structure of a rule"
+      },
+      "question": {
+        "es": "¿Cuál de estas reglas CSS está bien escrita?",
+        "en": "Which of these CSS rules is correctly written?"
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>p { color: red; }</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>p ( color = red; )</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>{ p: color red }</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>p { color red, }</code>"
+        }
+      ],
+      "correct": 0
+    },
+    {
+      "id": 3,
+      "number": "3",
+      "title": {
+        "es": "Propiedades de texto",
+        "en": "Text properties"
+      },
+      "question": {
+        "es": "Quieres que el texto de los párrafos sea azul y use la fuente Arial. ¿Qué propiedades usarías? Marca todas las correctas.",
+        "en": "You want paragraph text to be blue and use the Arial font. Which properties would you use? Select all that apply."
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>color</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>font-family</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>text-color</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>font-style</code>"
+        }
+      ],
+      "type": "multiple",
+      "correct": [0, 1]
+    },
+    {
+      "id": 4,
+      "number": "4",
+      "title": {
+        "es": "Padding o margin",
+        "en": "Padding or margin"
+      },
+      "question": {
+        "es": "Una tarjeta tiene borde. Quieres separar el texto del borde por dentro, sin alejar la tarjeta de las demás. ¿Qué propiedad usas?",
+        "en": "A card has a border. You want to move the text away from the border on the inside, without pushing the card away from the others. Which property do you use?"
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>margin</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>padding</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>border-spacing</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>gap</code>"
+        }
+      ],
+      "correct": 1
+    }
+  ]
+}

@@ -16,6 +16,14 @@ window.APP_CONFIG_DEFAULT = {
     default: "es"
   },
 
+  // Challenge set: challenges/<set>/content.json. `?<param>=<set>` in the URL
+  // picks another one, but only if it is listed in `sets`.
+  content: {
+    set: "html",
+    sets: ["html", "css"],
+    param: "set"
+  },
+
   economy: {
     initialTokens: 150,
 

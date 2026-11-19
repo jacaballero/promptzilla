@@ -623,7 +623,7 @@ function renderDialogue(node) {
     if (opt.requires && !GAME.flags[opt.requires]) return;
     if (opt.hideIfFlag && GAME.flags[opt.hideIfFlag]) return;
     // An answered challenge (right or wrong) can never be repeated.
-    if (opt.action && opt.action.type === "challenge" && isChallengeAnswered(opt.action.challengeId)) return;
+    if (opt.action && opt.action.type === "challenge" && isChallengeAnswered(actionChallengeId(opt.action))) return;
     const btn = document.createElement("button");
     btn.className = "dlg-option";
     btn.innerHTML = I18N.t(optionKey(opt, i));
@@ -658,18 +658,22 @@ function chooseOption(opt, index) {
 function failedFlag(challengeId) { return "failedChallenge" + challengeId; }
 function answeredFlag(challengeId) { return "answeredChallenge" + challengeId; }
 function isChallengeAnswered(challengeId) { return !!GAME.flags[answeredFlag(challengeId)]; }
+function actionChallengeId(action) {
+  return action.challengeId ?? ((window.CONTENT || {}).assign || {})[action.slot];
+}
 
 function handleAction(action) {
   if (action.type === "challenge") {
+    const id = actionChallengeId(action);
     dialogueEl.style.display = "none";
-    Challenge.open(action.challengeId, {
+    Challenge.open(id, {
       onWin: () => {
-        GAME.flags[answeredFlag(action.challengeId)] = true;
+        GAME.flags[answeredFlag(id)] = true;
         resumeDialogue(action.onWinGoto);
       },
       onLose: () => {
-        GAME.flags[answeredFlag(action.challengeId)] = true;
-        GAME.flags[failedFlag(action.challengeId)] = true;
+        GAME.flags[answeredFlag(id)] = true;
+        GAME.flags[failedFlag(id)] = true;
         resumeDialogue(action.onLoseGoto);
       },
       onExit: () => closeDialogue()
@@ -686,7 +690,7 @@ function gameChallengeIds() {
   const ids = new Set();
   Object.values(DIALOGUES).forEach(d => Object.values(d.nodes).forEach(n =>
     (n.options || []).forEach(o => {
-      if (o.action && o.action.type === "challenge") ids.add(o.action.challengeId);
+      if (o.action && o.action.type === "challenge") ids.add(actionChallengeId(o.action));
     })));
   return [...ids];
 }

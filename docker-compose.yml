@@ -10,6 +10,8 @@ services:
       - LRS_BASIC_AUTH=${LRS_BASIC_AUTH:-}
     volumes:
       - ./config.js:/srv/config.js:ro
+      # Challenge sets (challenges/<set>/content.json): add or edit without rebuilding.
+      - ./challenges:/srv/challenges:ro
     restart: unless-stopped
     # LLM on this same Linux host: uncomment and set LLM_UPSTREAM=host.docker.internal:<port>
     # extra_hosts: ["host.docker.internal:host-gateway"]
@@ -73,7 +75,7 @@ services:
       - ./i18n:/game/i18n:ro
       - ./i18n.js:/game/i18n.js:ro
       - ./xapi.js:/game/xapi.js:ro
-      - ./content.json:/game/content.json:ro
+      - ./challenges:/game/challenges:ro
       - ./scenes.json:/game/scenes.json:ro
       - ./dialogues.data.js:/game/dialogues.data.js:ro
     depends_on:
