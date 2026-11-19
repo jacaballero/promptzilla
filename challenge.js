@@ -111,6 +111,7 @@ const Challenge = (function () {
             <button id="c-consult" class="btn-primary">${t("challenge.consult")}</button>
           </div>
           <span id="c-cost"></span>
+          <span class="c-ai-note">${t("challenge.aiNote")}</span>
           <div id="c-no-tokens">${t("challenge.noTokens")}</div>
           <div id="c-response"></div>
         </div>`;

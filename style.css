@@ -673,6 +673,7 @@ body.adventure {
 }
 #c-cost { font-size: 0.72rem; color: var(--text-dim); }
 #c-cost.c-cost-warn { color: var(--neon-red); font-weight: 700; }
+.c-ai-note { font-size: 0.68rem; color: var(--text-dim); font-style: italic; }
 #c-no-tokens { display: none; font-size: 0.76rem; color: var(--neon-red); }
 #c-response { display: none; }
 #c-response.visible { display: block; }
@@ -825,6 +826,9 @@ body.adventure {
   letter-spacing: 0.04em;
 }
 .win-flavor { font-size: 0.85rem; color: var(--text-dim); font-style: italic; line-height: 1.5; }
+.win-flavor.flavor-low { color: #00FF88; }
+.win-flavor.flavor-mid { color: #F1C40F; }
+.win-flavor.flavor-high { color: #FF4455; }
 .win-card:has(.win-report) { width: min(720px, 100%); max-height: 92vh; overflow-y: auto; }
 .win-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .btn-secondary {

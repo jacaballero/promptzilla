@@ -52,16 +52,19 @@ const withHint = key => [key, "dlg.hint.lastPractice"];
 const spent = dialogue => GAME =>
   `dlg.${dialogue}.spent.${GAME.flags["failedChallenge" + challengeIdFor(dialogue)] ? "failed" : "passed"}`;
 
-// Practice classmate: intro, already-done, a side topic and win/lose replies.
-function practiceDialogue(id, topic) {
+// Practice classmate: intro, already-done, a side topic (plus an optional follow-up
+// reached from it) and win/lose replies.
+function practiceDialogue(id, topic, followUp) {
   const challenge = { type: "challenge", slot: id, onWinGoto: "won", onLoseGoto: "lost" };
+  const followUpOption = followUp ? [{ id: followUp, goto: followUp }] : [];
   return {
     start: "root",
     nodes: {
       root: { route: GAME => answered(GAME, id) ? "spent" : "intro" },
       intro: { options: [{ id: "challenge", action: challenge }, { id: "topic", goto: topic }, { id: "leave", end: true }] },
       spent: { npc: spent(id), options: [{ id: "topic", goto: topic }, { id: "leave", end: true }] },
-      [topic]: { options: [{ id: "challenge", action: challenge }, { id: "back", goto: "root" }] },
+      [topic]: { options: [{ id: "challenge", action: challenge }, ...followUpOption, { id: "back", goto: "root" }] },
+      ...(followUp ? { [followUp]: { options: [{ id: "challenge", action: challenge }, { id: "back", goto: "root" }] } } : {}),
       won: { route: afterPractice("wonMore", "wonLast") },
       wonMore: { options: [{ id: "leave", end: true }] },
       wonLast: { npc: withHint(`dlg.${id}.wonLast`), options: [{ id: "leave", end: true }] },
@@ -76,7 +79,7 @@ window.DIALOGUES = {
 
   studentGirl: practiceDialogue("studentGirl", "gossip"),
   studentBoy: practiceDialogue("studentBoy", "meta"),
-  studentGlasses: practiceDialogue("studentGlasses", "meta"),
+  studentGlasses: practiceDialogue("studentGlasses", "meta", "footprint"),
 
   // ─── Teacher (final exam) ────────────────────────────────────────────────
   teacher: {
@@ -108,8 +111,9 @@ window.DIALOGUES = {
   promptzilla: {
     start: "root",
     nodes: {
-      root: { options: [{ id: "origin", goto: "origin" }, { id: "threat", goto: "threat" }, { id: "leave", end: true }] },
+      root: { options: [{ id: "origin", goto: "origin" }, { id: "footprint", goto: "footprint" }, { id: "threat", goto: "threat" }, { id: "leave", end: true }] },
       origin: { options: [{ id: "back", goto: "root" }] },
+      footprint: { options: [{ id: "back", goto: "root" }] },
       threat: { options: [{ id: "accept", end: true }] }
     }
   }

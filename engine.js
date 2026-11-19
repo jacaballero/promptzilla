@@ -720,7 +720,8 @@ function showEnd() {
   const summary = I18N.t("end.summary", { count: correct, total });
 
   const usedRatio = spent / INITIAL_TOKENS;
-  const flavor = I18N.t(usedRatio > 0.9 ? "end.flavor.high" : usedRatio < 0.25 ? "end.flavor.low" : "end.flavor.mid");
+  const flavorLevel = usedRatio > 0.75 ? "high" : usedRatio < 0.25 ? "low" : "mid";
+  const flavor = I18N.t(`end.flavor.${flavorLevel}`);
 
   const overlay = document.createElement("div");
   overlay.id = "win-screen";
@@ -729,7 +730,7 @@ function showEnd() {
       <h1 class="win-letter grade-${letter.toLowerCase()}">${letter}</h1>
       <p class="win-grade">${summary}</p>
       <p>${I18N.t("end.tokens", { spent, remaining })}</p>
-      <p class="win-flavor">${flavor}</p>
+      <p class="win-flavor flavor-${flavorLevel}">${flavor}</p>
       <div id="win-report" class="win-report" style="display:none">
         <p class="rep-loading">${I18N.t("end.analyzing")}</p>
       </div>
@@ -761,16 +762,8 @@ function showEnd() {
     });
   }
 
-  overlay.querySelector("#win-restart").addEventListener("click", () => {
-    overlay.remove();
-    PromptEval.reset();
-    GAME.tokens = INITIAL_TOKENS;
-    GAME.totalSpent = 0;
-    GAME.flags = {};
-    refreshHUD();
-    XAPI.startGame();
-    changeScene("entrance", "default");
-  });
+  // Back to the start screen; reload() keeps the URL, so ?group, ?lang… are preserved.
+  overlay.querySelector("#win-restart").addEventListener("click", () => location.reload());
 }
 
 // ─── Asset preloading ───────────────────────────────────────────────────────
