@@ -34,7 +34,8 @@ These files drive the game so you can change content and behaviour without
 touching the engine code:
 
 - `challenges/<set>/content.json` — **the questions and answers** of each
-  challenge set (this is what a teacher edits). `html` is the default; `css` is another.
+  challenge set (this is what a teacher edits). `html` is the default; `css` and
+  `profes` (a light-hearted set for teachers trying out the game) are others.
 - `scenes.json` — scenes, hotspots and characters (positions, walkable areas).
 - `dialogues.data.js` — dialogue trees (JS because they contain game logic).
 - `i18n/<lang>.json` — every text of the interface, scenes and dialogues.
@@ -85,7 +86,7 @@ picks another one, but only if it is listed in `content.sets`:
 
 ```js
 window.APP_CONFIG = {
-  content: { set: "css", sets: ["html", "css"] }
+  content: { set: "css", sets: ["html", "css", "profes"] }
 };
 ```
 

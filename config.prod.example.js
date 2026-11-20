@@ -21,7 +21,7 @@ window.APP_CONFIG = {
   // Challenge set by default (challenges/<set>/); ?set=<name> picks one of `sets`.
   content: {
     set: "html",
-    sets: ["html", "css"]
+    sets: ["html", "css", "profes"]
   },
   // Anonymous interaction log sent to the LRS; set to false to log nothing.
   xapi: {

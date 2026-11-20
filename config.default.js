@@ -20,7 +20,7 @@ window.APP_CONFIG_DEFAULT = {
   // picks another one, but only if it is listed in `sets`.
   content: {
     set: "html",
-    sets: ["html", "css"],
+    sets: ["html", "css", "profes"],
     param: "set"
   },
 

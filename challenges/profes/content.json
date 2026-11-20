@@ -1,0 +1,147 @@
+{
+  "assign": {
+    "studentGirl": 1,
+    "studentBoy": 2,
+    "studentGlasses": 3,
+    "teacher": 4
+  },
+  "challenges": [
+    {
+      "id": 1,
+      "number": "1",
+      "title": {
+        "es": "La fecha del examen que nadie vio",
+        "en": "The exam date nobody saw"
+      },
+      "question": {
+        "es": "Es la tercera vez esta semana que te preguntan cuándo es el examen. Quieres que en la web de la asignatura la fecha (<code>class=\"fecha\"</code>) salga en rojo y en negrita, para que nadie vuelva a decir «no lo vi». ¿Qué regla CSS lo consigue?",
+        "en": "It's the third time this week someone asks when the exam is. You want the date on the course website (<code>class=\"fecha\"</code>) to be red and bold, so nobody can say \"I didn't see it\" again. Which CSS rule does it?"
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>.fecha { font-color: red; bold: yes; }</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>.fecha { color: red; font-weight: bold; }</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>.fecha { text: red bold; }</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>.fecha { color = red; font = bold; }</code>"
+        }
+      ],
+      "correct": 1
+    },
+    {
+      "id": 2,
+      "number": "2",
+      "title": {
+        "es": "El contador de cafés del claustro",
+        "en": "The staff-room coffee counter"
+      },
+      "question": {
+        "es": "En la sala de profes lleváis la cuenta de los cafés del día con JavaScript: <code>let cafes = 3; cafes++;</code> ¿Cuánto vale <code>cafes</code> después? (Spoiler: nunca son suficientes).",
+        "en": "In the staff room you keep track of the day's coffees with JavaScript: <code>let cafes = 3; cafes++;</code> What is the value of <code>cafes</code> afterwards? (Spoiler: it's never enough)."
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>3</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>\"31\"</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>4</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>undefined</code>"
+        }
+      ],
+      "correct": 2
+    },
+    {
+      "id": 3,
+      "number": "3",
+      "title": {
+        "es": "¿Ya están las notas?",
+        "en": "Are the grades out yet?"
+      },
+      "question": {
+        "es": "Para acabar con los 47 correos de «¿ya están las notas?», pones en la web un enlace «Ver notas» que lleve a <code>notas.html</code>. ¿Qué HTML es correcto?",
+        "en": "To stop the 47 emails asking \"are the grades out yet?\", you add a \"View grades\" link to the website that goes to <code>notas.html</code>. Which HTML is correct?"
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": {
+            "es": "<code>&lt;link href=\"notas.html\"&gt;Ver notas&lt;/link&gt;</code>",
+            "en": "<code>&lt;link href=\"notas.html\"&gt;View grades&lt;/link&gt;</code>"
+          }
+        },
+        {
+          "label": "B",
+          "text": {
+            "es": "<code>&lt;a src=\"notas.html\"&gt;Ver notas&lt;/a&gt;</code>",
+            "en": "<code>&lt;a src=\"notas.html\"&gt;View grades&lt;/a&gt;</code>"
+          }
+        },
+        {
+          "label": "C",
+          "text": {
+            "es": "<code>&lt;href=\"notas.html\"&gt;Ver notas&lt;/href&gt;</code>",
+            "en": "<code>&lt;href=\"notas.html\"&gt;View grades&lt;/href&gt;</code>"
+          }
+        },
+        {
+          "label": "D",
+          "text": {
+            "es": "<code>&lt;a href=\"notas.html\"&gt;Ver notas&lt;/a&gt;</code>",
+            "en": "<code>&lt;a href=\"notas.html\"&gt;View grades&lt;/a&gt;</code>"
+          }
+        }
+      ],
+      "correct": 3
+    },
+    {
+      "id": 4,
+      "number": "4",
+      "title": {
+        "es": "El examen sorpresa",
+        "en": "The pop quiz"
+      },
+      "question": {
+        "es": "Has dejado el examen sorpresa en la web (<code>id=\"sorpresa\"</code>) y los alumnos no deben verlo hasta el lunes, pero no quieres borrarlo. ¿Qué reglas CSS lo ocultan? Marca todas las correctas.",
+        "en": "You've left the pop quiz on the website (<code>id=\"sorpresa\"</code>) and students mustn't see it until Monday, but you don't want to delete it. Which CSS rules hide it? Select all that apply."
+      },
+      "options": [
+        {
+          "label": "A",
+          "text": "<code>#sorpresa { display: none; }</code>"
+        },
+        {
+          "label": "B",
+          "text": "<code>#sorpresa { hide: true; }</code>"
+        },
+        {
+          "label": "C",
+          "text": "<code>#sorpresa { visibility: hidden; }</code>"
+        },
+        {
+          "label": "D",
+          "text": "<code>#sorpresa { color: invisible; }</code>"
+        }
+      ],
+      "type": "multiple",
+      "correct": [0, 2]
+    }
+  ]
+}
