@@ -16,13 +16,18 @@ window.APP_CONFIG_DEFAULT = {
     default: "es"
   },
 
-  // Challenge set: challenges/<set>/content.json. `?<param>=<set>` in the URL
+  // Challenge set: challenges/<set>/content.json. `?set=<name>` in the URL
   // picks another one, but only if it is listed in `sets`.
   content: {
     set: "html",
-    sets: ["html", "css", "profes"],
-    param: "set"
+    sets: ["html", "css", "profes"]
   },
+
+  // Per-group settings, picked by ?group=<name> (which also tags the xAPI log).
+  // `set`: challenge set of the group (?set= in the URL still wins).
+  // `survey`: link shown on the end screen; no group or no entry => no link.
+  // e.g. groups: { "1A": { set: "html", survey: "https://forms.gle/…" } }
+  groups: {},
 
   economy: {
     initialTokens: 150,
@@ -95,7 +100,6 @@ window.APP_CONFIG_DEFAULT = {
     endpoint: "xapi/statements",
     // Prefix of activity IDs; keep it stable across deployments so traces match.
     activityBase: "https://promptzilla.uca.es/xapi",
-    batchMs: 1000,
-    groupParam: "group"      // ?group=... in the URL tags every statement
+    batchMs: 1000
   }
 };

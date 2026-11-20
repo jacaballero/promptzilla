@@ -831,6 +831,8 @@ body.adventure {
 .win-flavor.flavor-high { color: #FF4455; }
 .win-card:has(.win-report) { width: min(720px, 100%); max-height: 92vh; overflow-y: auto; }
 .win-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.win-survey { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.win-survey a { text-decoration: none; }
 .btn-secondary {
   padding: 9px 18px;
   background: transparent;

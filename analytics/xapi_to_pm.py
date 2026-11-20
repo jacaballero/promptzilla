@@ -15,7 +15,7 @@ data (catalog.js), so games logged by older versions are labelled the same way. 
 the game was played in (dfg.py --game-lang filters it).
 
 Usage:
-  docker compose run --rm analytics [--since 2026-10-01] [--group 1A] [--lang en]
+  docker compose run --rm analytics [--since 2026-10-01] [--group 1A] [--set css] [--lang en]
 Output goes to analytics/out/. Endpoint and credentials come from the
 environment (LRS_ENDPOINT / LRS_API_KEY / LRS_API_SECRET, set by compose), and
 the extensions prefix (--vocab-ext) from XAPI_VOCAB_EXT.
@@ -51,7 +51,7 @@ VERB_LABELS = {
         "initialized": "inició", "completed": "completó", "abandoned": "abandonó",
         "accessed": "accedió", "interacted": "interactuó", "selected": "seleccionó",
         "exited": "salió", "answered": "respondió", "asked": "preguntó", "failed": "falló",
-        "downloaded": "descargó", "received": "recibió", "blocked": "bloqueado",
+        "downloaded": "descargó", "launched": "abrió", "received": "recibió", "blocked": "bloqueado",
         "evaluated": "evaluado",
     },
 }
@@ -60,6 +60,7 @@ TYPE_LABELS = {
         "serious-game": "juego", "area": "escena", "non-player-character": "personaje",
         "dialog-tree": "diálogo", "menu": "menú", "question": "pregunta", "hotspot": "elemento",
         "ai-tutor": "tutor IA", "prompt-evaluation": "evaluación de prompts", "report": "informe",
+        "survey": "encuesta",
     },
 }
 RESPONSE_LABELS = {"es": {"direct": "directo", "socratic": "socrático"}}
@@ -140,12 +141,20 @@ def game_catalog():
         return {"names": {}, "options": {}}
 
 
-ACTIVITY_PATH = re.compile(r"/(?:game|report|scene|character|dialogue|challenge)(?:/.*)?$")
+ACTIVITY_PATH = re.compile(r"/(?:game|report|survey|restart|scene|character|dialogue|challenge)(?:/.*)?$")
+CHALLENGE_PATH = re.compile(r"/challenge/(?:([a-z0-9_-]+)/)?\d+(?:/|$)")
 
 
 def activity_path(iri):
     m = ACTIVITY_PATH.search(iri or "")
     return m.group(0) if m else None
+
+
+# Statements logged before the `set` extension: the set is in the challenge
+# activity id (/challenge/<set>/<id>); ids without it are from the html-only era.
+def challenge_set(iri):
+    m = CHALLENGE_PATH.search(activity_path(iri) or "")
+    return (m.group(1) or "html") if m else None
 
 
 def resolve_names(statements, catalog_names):
@@ -226,6 +235,7 @@ def to_row(st, vocab_ext, lang, names, catalog):
         "total_spent": cext.get("total_spent"),
         "scene": cext.get("scene"),
         "group": cext.get("group"),
+        "set": cext.get("set") or challenge_set(obj.get("id")),
         "debug": bool(cext.get("debug", False)),
     }
     for k, v in ext_short(result.get("extensions"), vocab_ext).items():
@@ -242,6 +252,7 @@ def main():
                     help="ISO 8601 date/time, e.g. 2026-10-31 or 2026-10-31T09:00+01:00 (UTC if no zone)")
     ap.add_argument("--until", type=xapi_timestamp, help="ISO 8601 date/time (same format as --since)")
     ap.add_argument("--group", help="keep only this ?group= value")
+    ap.add_argument("--set", help="keep only games played with this challenge set")
     ap.add_argument("--lang", default="es", choices=LANGS,
                     help="language of concept:name / activity_coarse (default: es)")
     ap.add_argument("--include-debug", action="store_true", help="keep games played with ?debug")
@@ -266,6 +277,13 @@ def main():
         sys.exit("No Promptzilla statements matched.")
 
     df = pd.DataFrame(rows)
+    # Old games only carry the set on challenge statements: spread it to the whole case.
+    df["set"] = df.groupby("case:concept:name")["set"].transform(
+        lambda s: s.fillna(s.dropna().iloc[0]) if s.notna().any() else s)
+    if args.set:
+        df = df[df["set"] == args.set]
+        if df.empty:
+            sys.exit("No Promptzilla statements matched.")
     df["time:timestamp"] = pd.to_datetime(df["time:timestamp"], utc=True, format="ISO8601")
     df = df.sort_values(["case:concept:name", "time:timestamp", "seq"], kind="stable").reset_index(drop=True)
 

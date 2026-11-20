@@ -708,6 +708,18 @@ function closeDialogue() {
 }
 
 // ─── End screen ─────────────────────────────────────────────────────────────
+// Survey link of the ?group= in the URL (CONFIG.groups[group].survey), http(s) only.
+function surveyUrl() {
+  const raw = window.GROUP_CONFIG && window.GROUP_CONFIG.survey;
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    const url = new URL(raw, location.href);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function showEnd() {
   const spent = GAME.totalSpent;
   const remaining = GAME.tokens;
@@ -731,6 +743,10 @@ function showEnd() {
       <p class="win-grade">${summary}</p>
       <p>${I18N.t("end.tokens", { spent, remaining })}</p>
       <p class="win-flavor flavor-${flavorLevel}">${flavor}</p>
+      <div id="win-survey" class="win-survey" style="display:none">
+        <p>${I18N.t("end.survey.text")}</p>
+        <a class="btn-primary" target="_blank" rel="noopener noreferrer">${I18N.t("end.survey.link")}</a>
+      </div>
       <div id="win-report" class="win-report" style="display:none">
         <p class="rep-loading">${I18N.t("end.analyzing")}</p>
       </div>
@@ -741,6 +757,14 @@ function showEnd() {
     </div>`;
   document.body.appendChild(overlay);
   XAPI.endGame({ correct, total, grade: letter, spent, remaining });
+
+  const survey = surveyUrl();
+  if (survey) {
+    const link = overlay.querySelector("#win-survey a");
+    link.href = survey;
+    link.addEventListener("click", () => XAPI.surveyOpened());
+    overlay.querySelector("#win-survey").style.display = "";
+  }
 
   if (PromptEval.enabled()) {
     const reportEl = overlay.querySelector("#win-report");
@@ -763,7 +787,10 @@ function showEnd() {
   }
 
   // Back to the start screen; reload() keeps the URL, so ?group, ?lang… are preserved.
-  overlay.querySelector("#win-restart").addEventListener("click", () => location.reload());
+  overlay.querySelector("#win-restart").addEventListener("click", () => {
+    XAPI.restartClicked();
+    location.reload();
+  });
 }
 
 // ─── Asset preloading ───────────────────────────────────────────────────────

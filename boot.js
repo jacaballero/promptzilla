@@ -40,13 +40,25 @@
   const i18nCfg = window.CONFIG.i18n || {};
   const languages = i18nCfg.languages || ["es"];
 
+  const params = new URLSearchParams(window.location.search);
+
+  // ?group=<name> tags the xAPI log and picks the group's settings in `groups`.
+  const g = params.get("group");
+  window.GAME_GROUP = g && /^[\w.-]{1,64}$/.test(g) ? g : null;
+  const groups = window.CONFIG.groups || {};
+  window.GROUP_CONFIG = window.GAME_GROUP && Object.prototype.hasOwnProperty.call(groups, window.GAME_GROUP)
+    ? groups[window.GAME_GROUP] || {} : {};
+
+  // Set: ?set= (if listed in `sets`) > the group's `set` > the default `set`.
   const contentCfg = window.CONFIG.content || {};
   const allowedSets = contentCfg.sets || [];
-  const validSet = s => typeof s === "string" && /^[a-z0-9_-]+$/.test(s) && allowedSets.includes(s);
-  const requested = new URLSearchParams(window.location.search).get(contentCfg.param || "set");
+  const validName = s => typeof s === "string" && /^[a-z0-9_-]+$/.test(s);
+  const requested = params.get("set");
   let set = contentCfg.set || "html";
+  if (validName(window.GROUP_CONFIG.set)) set = window.GROUP_CONFIG.set;
+  else if (window.GROUP_CONFIG.set !== undefined) console.warn(`Invalid set for group "${window.GAME_GROUP}"; using "${set}".`);
   if (requested !== null) {
-    if (validSet(requested)) set = requested;
+    if (validName(requested) && allowedSets.includes(requested)) set = requested;
     else console.warn(`Challenge set "${requested}" not allowed; using "${set}".`);
   }
   window.CHALLENGE_SET = set;

@@ -23,6 +23,11 @@ window.APP_CONFIG = {
     set: "html",
     sets: ["html", "css", "profes"]
   },
+  // Per-group settings for ?group=<name>: its challenge `set` and a `survey`
+  // link on the end screen. Set priority: ?set= > group's set > content.set.
+  groups: {
+    // "1A": { set: "html", survey: "https://forms.gle/…" }
+  },
   // Anonymous interaction log sent to the LRS; set to false to log nothing.
   xapi: {
     enabled: true

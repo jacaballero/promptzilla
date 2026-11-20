@@ -81,20 +81,41 @@ Notes:
 
 ### Choosing the challenge set
 
-The active set comes from `content.set` in the config; `?set=<name>` in the URL
-picks another one, but only if it is listed in `content.sets`:
+The active set is, in order of priority:
+
+1. `?set=<name>` in the URL, only if it is listed in `content.sets`;
+2. the `set` of the `?group=` in `groups` (see below);
+3. `content.set` in the config.
 
 ```js
 window.APP_CONFIG = {
-  content: { set: "css", sets: ["html", "css", "profes"] }
+  content: { set: "css", sets: ["html", "css", "profes"] },
+  groups: { "1A": { set: "html" } }
 };
 ```
+
+So a class only needs `?group=1A`. A set given in `groups` does not have to be
+in `content.sets` (that list only limits `?set=`).
 
 In Docker, `./challenges` and `config.js` are mounted into the container, so
 adding a set (new folder + its name in `content.sets`) or switching the default
 only needs a browser reload — no rebuild. xAPI activity ids include the set
 (`/challenge/<set>/<id>`); rebuild the analytics image after changing
 `analytics/catalog.js`.
+
+### Per-group settings (set and survey link)
+
+`?group=<name>` (the same parameter that tags the xAPI log) picks the group's
+entry in `groups`: its challenge `set` and a `survey` link shown on the end screen:
+
+```js
+window.APP_CONFIG = {
+  groups: { "1A": { set: "html", survey: "https://forms.gle/…" } }
+};
+```
+
+No `?group=`, or a group without a `survey` entry, shows no link. Only
+`http(s)` URLs are accepted.
 
 ### Changing token costs and the LLM
 
@@ -284,10 +305,11 @@ To deploy elsewhere (another server or university), just change
 With `xapi.enabled: true` (default in `config.prod.example.js`, off in
 `config.default.js`) the game sends anonymous xAPI statements for every
 relevant action (scenes, hotspots, characters, dialogue options, challenges,
-AI consultations, prompt-evaluation metadata, game start/end/abandon). Each game
+AI consultations, prompt-evaluation metadata, game start/end/abandon, and the
+end-screen report download, survey link and restart). Each game
 gets a fresh random actor and registration (the process-mining case id); no
-prompt or answer text is stored. Add `?group=<name>` to the game URL to tag a
-class/group. Vocabulary: xAPI Serious Games Profile + ADL verbs.
+prompt or answer text is stored. Every statement carries the challenge `set`;
+add `?group=<name>` to the game URL to tag a class/group. Vocabulary: xAPI Serious Games Profile + ADL verbs.
 
 Compose runs a **SQL LRS** (`lrs`) backed by **Postgres** (`db`). The browser
 only POSTs to `/xapi/statements` on the game origin; Caddy forwards it to the
@@ -305,7 +327,7 @@ runs in its own container (pinned Python + pm4py) and talks to the LRS over the
 internal Docker network with the credentials from `.env`:
 
 ```bash
-docker compose run --rm analytics [--group 1A] [--since 2026-10-01] [--lang en]
+docker compose run --rm analytics [--group 1A] [--set css] [--since 2026-10-01] [--lang en]
 # → analytics/out/events.csv and analytics/out/events.xes
 ```
 
@@ -325,3 +347,5 @@ The log has `activity_fine_es/en` (verb + object, e.g. a specific challenge)
 and `activity_coarse_es/en` (verb + type) for every game, whatever language it
 was played in; `concept:name`/`activity_coarse` repeat the exporter's `--lang`.
 Games played with `?debug` are skipped unless `--include-debug` is given.
+The `group` and `set` columns tag every event. Games logged before the `set`
+extension get it from their challenge activity ids (`html` for the oldest ones).

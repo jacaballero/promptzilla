@@ -30,6 +30,7 @@ const XAPI = (function () {
     asked: "http://adlnet.gov/expapi/verbs/asked",
     failed: "http://adlnet.gov/expapi/verbs/failed",
     downloaded: "http://id.tincanapi.com/verb/downloaded",
+    launched: "http://adlnet.gov/expapi/verbs/launched",
     received: VOCAB + "/verbs/received",
     blocked: VOCAB + "/verbs/blocked",
     evaluated: VOCAB + "/verbs/evaluated"
@@ -38,7 +39,7 @@ const XAPI = (function () {
   const VERB_ES = {
     initialized: "inició", completed: "completó", abandoned: "abandonó", accessed: "accedió",
     interacted: "interactuó", selected: "seleccionó", exited: "salió", answered: "respondió",
-    asked: "preguntó", failed: "falló", downloaded: "descargó", received: "recibió",
+    asked: "preguntó", failed: "falló", downloaded: "descargó", launched: "abrió", received: "recibió",
     blocked: "bloqueado", evaluated: "evaluado"
   };
 
@@ -53,6 +54,7 @@ const XAPI = (function () {
     tutor: VOCAB + "/activity-types/ai-tutor",
     evaluation: VOCAB + "/activity-types/prompt-evaluation",
     report: VOCAB + "/activity-types/report",
+    survey: "http://id.tincanapi.com/activitytype/survey",
     profile: "http://adlnet.gov/expapi/activities/profile"
   };
 
@@ -86,8 +88,7 @@ const XAPI = (function () {
   }
 
   function group() {
-    const g = params.get(cfg().groupParam || "group");
-    return g && /^[\w.-]{1,64}$/.test(g) ? g : null;
+    return window.GAME_GROUP || null;
   }
 
   function duration(ms) {
@@ -145,7 +146,8 @@ const XAPI = (function () {
       [EXT("seq")]: ++seq,
       [EXT("tokens")]: game.tokens ?? null,
       [EXT("total-spent")]: game.totalSpent ?? null,
-      [EXT("scene")]: game.sceneId ?? null
+      [EXT("scene")]: game.sceneId ?? null,
+      [EXT("set")]: window.CHALLENGE_SET || null
     };
     const g = group();
     if (g) extensions[EXT("group")] = g;
@@ -319,6 +321,8 @@ const XAPI = (function () {
   const evaluationActivity = (id, title) =>
     activity(`${challengePath(id)}/prompt-evaluation`, TYPES.evaluation, tNames("xapi.evaluation", title));
   const reportActivity = () => activity("/report", TYPES.report, langMap(code => I18N.tFor(code, "xapi.report")));
+  const surveyActivity = () => activity("/survey", TYPES.survey, langMap(code => I18N.tFor(code, "xapi.survey")));
+  const restartActivity = () => activity("/restart", TYPES.menu, langMap(code => I18N.tFor(code, "xapi.restart")));
 
   function modeSelected(ch, mode) {
     track("selected", modeActivity(ch), { result: { response: mode } });
@@ -373,10 +377,22 @@ const XAPI = (function () {
     flush(false);
   }
 
+  // End-screen links: the survey opens in a new tab; restart reloads the page,
+  // so its statement is sent with keepalive.
+  function surveyOpened() {
+    track("launched", surveyActivity(), { parent: null });
+    flush(false);
+  }
+
+  function restartClicked() {
+    track("interacted", restartActivity(), { parent: null });
+    flush(true);
+  }
+
   // Every activity the game can log with its names in all languages, so the
   // exporter can relabel statements logged by older versions of the game.
   function catalog() {
-    const list = [gameActivity(), reportActivity()];
+    const list = [gameActivity(), reportActivity(), surveyActivity(), restartActivity()];
     Object.values(window.SCENES || {}).forEach(scene => {
       list.push(sceneActivity(scene));
       (scene.hotspots || []).forEach(h => list.push(hotspotActivity(scene.id, h)));
@@ -413,7 +429,7 @@ const XAPI = (function () {
     dialogueOpened, dialogueOptionSelected, dialogueClosed,
     challengeOpened, challengeExited, challengeAnswered, challengeClosed,
     modeSelected, tutorAsked, tutorReceived, tutorFailed, tutorBlocked,
-    promptEvaluated, reportDownloaded, catalog
+    promptEvaluated, reportDownloaded, surveyOpened, restartClicked, catalog
   };
 })();
 
