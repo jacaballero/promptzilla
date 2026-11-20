@@ -143,6 +143,8 @@ def game_catalog():
 
 ACTIVITY_PATH = re.compile(r"/(?:game|report|survey|restart|scene|character|dialogue|challenge)(?:/.*)?$")
 CHALLENGE_PATH = re.compile(r"/challenge/(?:([a-z0-9_-]+)/)?\d+(?:/|$)")
+# Context extensions with a fixed column (always present, in this order).
+CONTEXT_COLUMNS = ("seq", "tokens", "total_spent", "scene", "group", "set", "set_version", "debug")
 
 
 def activity_path(iri):
@@ -236,8 +238,13 @@ def to_row(st, vocab_ext, lang, names, catalog):
         "scene": cext.get("scene"),
         "group": cext.get("group"),
         "set": cext.get("set") or challenge_set(obj.get("id")),
+        "set_version": cext.get("set_version"),
         "debug": bool(cext.get("debug", False)),
     }
+    # Any other context extension becomes a column too (c_ if its name is taken).
+    for k, v in cext.items():
+        if k not in CONTEXT_COLUMNS:
+            row[("c_" + k) if k in row else k] = lang_value(v, lang) if is_lang_map(v) else v
     for k, v in ext_short(result.get("extensions"), vocab_ext).items():
         row["r_" + k] = lang_value(v, lang) if is_lang_map(v) else v
     return row

@@ -54,6 +54,7 @@ exam); `challenges` holds the questions, with texts per language:
 
 ```json
 {
+  "version": 1,
   "assign": { "studentGirl": 1, "studentBoy": 2, "studentGlasses": 3, "teacher": 4 },
   "challenges": [
     {
@@ -76,6 +77,10 @@ Notes:
 - `title`, `question` and `options[].text` accept a plain string (same in all
   languages) or `{ "es": "…", "en": "…" }`. `question` and options accept HTML
   (use `&lt;` / `&gt;` to display literal `<` `>`).
+- `version` is logged with every xAPI statement (`set_version` in the export).
+  **Increase it whenever you change a question, its options or the answer**, so
+  answers to the old and the new wording can be told apart (activity ids, e.g.
+  `/challenge/css/2`, stay the same).
 - `correct` is a **0-based** index. For questions with several right answers use
   an array, e.g. `"correct": [0, 2]` (the game infers a multiple-choice question).
 
@@ -347,5 +352,6 @@ The log has `activity_fine_es/en` (verb + object, e.g. a specific challenge)
 and `activity_coarse_es/en` (verb + type) for every game, whatever language it
 was played in; `concept:name`/`activity_coarse` repeat the exporter's `--lang`.
 Games played with `?debug` are skipped unless `--include-debug` is given.
-The `group` and `set` columns tag every event. Games logged before the `set`
+The `group`, `set` and `set_version` columns tag every event; any other
+context extension also becomes a column, and result extensions become `r_*` columns. Games logged before the `set`
 extension get it from their challenge activity ids (`html` for the oldest ones).

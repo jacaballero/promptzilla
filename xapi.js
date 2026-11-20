@@ -147,7 +147,8 @@ const XAPI = (function () {
       [EXT("tokens")]: game.tokens ?? null,
       [EXT("total-spent")]: game.totalSpent ?? null,
       [EXT("scene")]: game.sceneId ?? null,
-      [EXT("set")]: window.CHALLENGE_SET || null
+      [EXT("set")]: window.CHALLENGE_SET || null,
+      [EXT("set-version")]: (window.CONTENT || {}).version ?? null
     };
     const g = group();
     if (g) extensions[EXT("group")] = g;
