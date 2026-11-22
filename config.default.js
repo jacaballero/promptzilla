@@ -20,7 +20,7 @@ window.APP_CONFIG_DEFAULT = {
   // picks another one, but only if it is listed in `sets`.
   content: {
     set: "html",
-    sets: ["html", "css", "profes"]
+    sets: ["html", "css", "profes", "kubernetes"]
   },
 
   // Per-group settings, picked by ?group=<name> (which also tags the xAPI log).

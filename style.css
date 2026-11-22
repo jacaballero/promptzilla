@@ -597,6 +597,16 @@ body.adventure {
   background: rgba(123,47,190,0.2);
   padding: 1px 4px; border-radius: 3px;
 }
+#c-question pre {
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: rgba(123,47,190,0.2);
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+#c-question pre code { background: none; padding: 0; }
 #c-options { display: flex; flex-direction: column; gap: 6px; }
 #c-multi-hint { font-size: 0.72rem; color: var(--text-dim); }
 #c-llm {

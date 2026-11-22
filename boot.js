@@ -63,6 +63,23 @@
   }
   window.CHALLENGE_SET = set;
 
+  // A set may replace the tutor/report prompts via `prompts` in its content.json.
+  // Only these keys are taken, so a set can never change endpoints, models or costs.
+  const SET_PROMPT_KEYS = {
+    llm: ["system", "modeInstructions", "brevitySuffix"],
+    evaluation: ["systemPerChallenge", "systemSummary"]
+  };
+  function applySetPrompts(prompts) {
+    if (!isObject(prompts)) return;
+    Object.keys(SET_PROMPT_KEYS).forEach(section => {
+      const src = prompts[section];
+      if (!isObject(src)) return;
+      const picked = {};
+      SET_PROMPT_KEYS[section].forEach(key => { if (key in src) picked[key] = src[key]; });
+      window.CONFIG[section] = deepMerge(window.CONFIG[section] || {}, picked);
+    });
+  }
+
   window.GAME_READY = Promise.all([
     getJSON(`challenges/${set}/content.json`),
     getJSON("scenes.json"),
@@ -71,6 +88,7 @@
   ]).then(([content, scenes, profanity, ...texts]) => {
     window.CONTENT = content;
     window.CHALLENGES = content.challenges || [];
+    applySetPrompts(content.prompts);
     window.SCENES = scenes;
     window.PROFANITY = profanity;
     I18N.init(Object.fromEntries(languages.map((code, i) => [code, texts[i]])), i18nCfg.default);

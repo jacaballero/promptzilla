@@ -83,6 +83,11 @@ Notes:
   `/challenge/css/2`, stay the same).
 - `correct` is a **0-based** index. For questions with several right answers use
   an array, e.g. `"correct": [0, 2]` (the game infers a multiple-choice question).
+- `prompts` *(optional)* replaces, for this set only, the tutor and report
+  instructions of the config, e.g. for a subject other than web development:
+  `"prompts": { "llm": { "system": "…", "modeInstructions": { "socratic": "…" } },
+  "evaluation": { "systemPerChallenge": "…", "systemSummary": "…" } }`. Only
+  these keys (plus `llm.brevitySuffix`) are read; see `challenges/kubernetes/`.
 
 ### Choosing the challenge set
 

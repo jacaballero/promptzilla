@@ -21,7 +21,7 @@ window.APP_CONFIG = {
   // Challenge set by default (challenges/<set>/); ?set=<name> picks one of `sets`.
   content: {
     set: "html",
-    sets: ["html", "css", "profes"]
+    sets: ["html", "css", "profes", "kubernetes"]
   },
   // Per-group settings for ?group=<name>: its challenge `set` and a `survey`
   // link on the end screen. Set priority: ?set= > group's set > content.set.
