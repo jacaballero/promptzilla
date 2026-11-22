@@ -17,6 +17,7 @@ LICENSE
 # Tooling and build helpers.
 tools
 analytics
+assets/_raw
 **/__pycache__
 .env
 .env.*
